@@ -247,7 +247,7 @@ Split conformal prediction and selective classification give **distribution-free
 | **R-AV** real talking heads | AVLips real split, LipSyncTIMIT real (VidTIMIT), InDeepFake real, HAV-DF real, **own recordings** (team + friends, Hindi/Marathi/English, phone cameras, 6–12 s, consented) | M1 self-supervised pre-training, M4 self-blend, calibration | 3–6 k clips `[TARGET]` |
 | **F-LS** lip-sync fakes | AVLips fake, LipSyncTIMIT fakes (Diff2Lip, VideoRetalking, Wav2Lip, Wav2Lip-GAN, IP_LAP), InDeepFake lip-sync subset, **RedTeam Forge MuseTalk fakes on R-AV Indic speakers** | M1 fine-tune + eval | 3–5 k |
 | **F-HELD** held-out generator | LatentSync fakes (made by us) + one LipSyncTIMIT generator excluded from training (IP_LAP) | **Test only** — the generalisation claim | 300–500 |
-| **R-A** real speech | IndicSUPERB via IndicSynth bona fide, IndicTTS-challenge real, R-AV audio tracks | M2 | 20–40 k utterances |
+| **R-A** real speech | **Google FLEURS (hi, mr — open)**, IndicTTS-challenge real (as, bn, brx), R-AV audio tracks | M2 | 20–40 k utterances |
 | **F-A** synthetic speech | IndicTTS-challenge TTS, IndicSynth (XTTS-v2 / VITS / FreeVC), PartialSpoof (English, has segment labels) | M2 utterance + frame heads | 20–40 k |
 | **S-A** splices (generated) | RedTeam splice factory (§4.2.3) over R-A | M2 boundary head | 30 k+ (free, on the fly) |
 | **G** generation ladders | ForwardChain over everything above | All models + M3 labels | ×6 per clip |
@@ -539,6 +539,21 @@ Weak numbers are presented as findings ("face artifacts fade after Gen-4 — whi
 - `models/registry.json`: `{name, version, sha256, onnx_path, input_spec, calib: {T, qhat_by_bucket}, trained_on, metrics_ref}`. The server refuses to start if a hash mismatches (no silent model swaps before the demo).
 - Distribution: models (~150 MB INT8 total) go to a Hugging Face model repo (`paradigm-shift/satyacheck-v2`) and are pulled by `make models`. Not committed to git.
 
+
+## 4.13 Build log — findings that changed the plan (measured, not assumed)
+
+| # | Finding | Evidence | Consequence |
+|---|---|---|---|
+| 1 | **MediaPipe misses small faces** in wide shots (the AI-anchor sample: 0/60 frames) | P0.3b smoke test | 3×3 upscaled-tile fallback in `preprocess.py` (10/10 recovered); faceless clips abort tiles after 6 attempts (7.0 s → 2.7 s) |
+| 2 | **The AI-anchor sample is not talking** (man on a phone call) | Viewed the frame + mouth aperture max 0.006 | v1's "mouth moves with no audio" story about it was wrong; FaceTrace, not a rule, must carry it |
+| 3 | **Whisper-small hallucinates on Assamese** (Telugu-script garbage, 73 s decode) | P1.5 test | Whisper is annotation-only; `pick_units` detects language first, runs only hi/mr/en, rejects degenerate output, falls back to pause segments |
+| 4 | **AAC/ADTS adds ~23 ms codec delay per hop** (372 samples @16 kHz) | P3.1 alignment test | 5 hops would shift labels ~115 ms; measured and compensated in `aac_mem.py` (click stays at 2.9999 s after 5 hops) |
+| 5 | **Attack order matters**: real attackers splice first, then the video is forwarded | Design review | Training splices in memory, *then* applies the AAC chain — pre-encoded ladders of clean clips would teach the wrong distribution |
+| 6 | **IndicSynth "train" parquets are all synthetic**; its bona fide audio is IndicSUPERB, not included | Column inspection | Real Hindi/Marathi from **Google FLEURS** (open); per-language balance rule (`balance_lang`) — a language with no real speech loses its synthetic clips |
+| 7 | **Language → label shortcut** (Marathi was 100% synthetic, Hindi 84%) | Manifest audit | Balanced to ≤1.5× synthetic:real per language; synthetic-voice AUC is additionally reported *within a single corpus* (§4.11 claim guard) |
+| 8 | **TTS-insertion attack needs no XTTS**: inserted material is cut from real synthetic clips of the same language | Design | `insert_tts` op draws from IndicTTS/IndicSynth synthetic clips; labels exact |
+| 9 | Network is the bottleneck (~1–3 MB/s), GPU is the training bottleneck (100% util, 3.4 GB of 8 GB, ~8.5 samples/s) | Measurements | Dataset slices are capped; epoch = 3,000 on-the-fly samples ≈ 6 min |
+| 10 | `hf` replaced `huggingface-cli`; `gdown` 6 dropped `--fuzzy`; ffmpeg ≥ 7 rejects `-r` with `-fps_mode vfr`; PyAV 18 returns `pict_type` as int | Runtime errors | Scripts fixed |
 
 ---
 
