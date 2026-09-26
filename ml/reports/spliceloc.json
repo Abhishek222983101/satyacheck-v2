@@ -1,0 +1,266 @@
+{
+  "ckpt": "ml/runs/spliceloc_v4/best.pt",
+  "epoch": 4,
+  "boundary_thr_from_val": 0.5,
+  "n_per_set": 300,
+  "mixed_by_gen": {
+    "0": {
+      "n": 300,
+      "frame_eer": 0.07606880528896154,
+      "boundary_f1_80ms": 0.552901023890785,
+      "boundary_f1_40ms": 0.5460750853242321,
+      "boundary_f1_80ms_spliced_only": 0.6183206106870228,
+      "boundary_prec_80ms": 0.7105263157894737,
+      "boundary_rec_80ms": 0.45251396648044695,
+      "auc_splice": 0.8628887894383531,
+      "auc_synth": 0.9997750000000001
+    },
+    "1": {
+      "n": 300,
+      "frame_eer": 0.07575647093266574,
+      "boundary_f1_80ms": 0.5748031496062992,
+      "boundary_f1_40ms": 0.5748031496062992,
+      "boundary_f1_80ms_spliced_only": 0.6431718061674009,
+      "boundary_prec_80ms": 0.73,
+      "boundary_rec_80ms": 0.474025974025974,
+      "auc_splice": 0.8676988636363637,
+      "auc_synth": 0.998575
+    },
+    "2": {
+      "n": 300,
+      "frame_eer": 0.06352181606570362,
+      "boundary_f1_80ms": 0.5748987854251013,
+      "boundary_f1_40ms": 0.5748987854251013,
+      "boundary_f1_80ms_spliced_only": 0.6367713004484304,
+      "boundary_prec_80ms": 0.71,
+      "boundary_rec_80ms": 0.48299319727891155,
+      "auc_splice": 0.8935703703703703,
+      "auc_synth": 0.9988952399250685
+    },
+    "3": {
+      "n": 300,
+      "frame_eer": 0.06813051912514412,
+      "boundary_f1_80ms": 0.608,
+      "boundary_f1_40ms": 0.608,
+      "boundary_f1_80ms_spliced_only": 0.6386554621848739,
+      "boundary_prec_80ms": 0.8172043010752689,
+      "boundary_rec_80ms": 0.4840764331210191,
+      "auc_splice": 0.8934933272237814,
+      "auc_synth": 0.9976728064963358
+    },
+    "4": {
+      "n": 300,
+      "frame_eer": 0.0617365127780215,
+      "boundary_f1_80ms": 0.564885496183206,
+      "boundary_f1_40ms": 0.549618320610687,
+      "boundary_f1_80ms_spliced_only": 0.6040816326530611,
+      "boundary_prec_80ms": 0.7956989247311828,
+      "boundary_rec_80ms": 0.4378698224852071,
+      "auc_splice": 0.8952308472856418,
+      "auc_synth": 0.9993544722164842
+    },
+    "5": {
+      "n": 300,
+      "frame_eer": 0.06991125272584742,
+      "boundary_f1_80ms": 0.5683453237410072,
+      "boundary_f1_40ms": 0.5683453237410072,
+      "boundary_f1_80ms_spliced_only": 0.6076923076923076,
+      "boundary_prec_80ms": 0.7523809523809524,
+      "boundary_rec_80ms": 0.45664739884393063,
+      "auc_splice": 0.9037754939027638,
+      "auc_synth": 0.9985938319271653
+    }
+  },
+  "per_op": {
+    "delete": {
+      "0": {
+        "n_pos": 221,
+        "boundary_f1_80ms_spliced_only": 0.672316384180791,
+        "auc_splice": 0.7754010695187166
+      },
+      "3": {
+        "n_pos": 247,
+        "boundary_f1_80ms_spliced_only": 0.5923913043478262,
+        "auc_splice": 0.7141204660001653
+      },
+      "5": {
+        "n_pos": 242,
+        "boundary_f1_80ms_spliced_only": 0.5846994535519126,
+        "auc_splice": 0.738066921991534
+      }
+    },
+    "swap": {
+      "0": {
+        "n_pos": 256,
+        "boundary_f1_80ms_spliced_only": 0.6404574696211579,
+        "auc_splice": 0.9014756944444444
+      },
+      "3": {
+        "n_pos": 268,
+        "boundary_f1_80ms_spliced_only": 0.6004169562195969,
+        "auc_splice": 0.8774653518123667
+      },
+      "5": {
+        "n_pos": 264,
+        "boundary_f1_80ms_spliced_only": 0.5732484076433121,
+        "auc_splice": 0.8658074648928307
+      }
+    },
+    "duplicate": {
+      "0": {
+        "n_pos": 230,
+        "boundary_f1_80ms_spliced_only": 0.4146341463414634,
+        "auc_splice": 0.7280193236714976
+      },
+      "3": {
+        "n_pos": 254,
+        "boundary_f1_80ms_spliced_only": 0.38844301765650086,
+        "auc_splice": 0.6989092881246988
+      },
+      "5": {
+        "n_pos": 238,
+        "boundary_f1_80ms_spliced_only": 0.38983050847457623,
+        "auc_splice": 0.7154232424677188
+      }
+    },
+    "insert_tts": {
+      "0": {
+        "n_pos": 244,
+        "boundary_f1_80ms_spliced_only": 0.8191881918819188,
+        "auc_splice": 0.9578779599271403
+      },
+      "3": {
+        "n_pos": 234,
+        "boundary_f1_80ms_spliced_only": 0.8050632911392406,
+        "auc_splice": 0.9587366998081284
+      },
+      "5": {
+        "n_pos": 247,
+        "boundary_f1_80ms_spliced_only": 0.765,
+        "auc_splice": 0.960679371975906
+      }
+    },
+    "insert_real": {
+      "0": {
+        "n_pos": 244,
+        "boundary_f1_80ms_spliced_only": 0.826829268292683,
+        "auc_splice": 0.9615416459678754
+      },
+      "3": {
+        "n_pos": 234,
+        "boundary_f1_80ms_spliced_only": 0.8157560355781447,
+        "auc_splice": 0.9381105006105006
+      },
+      "5": {
+        "n_pos": 247,
+        "boundary_f1_80ms_spliced_only": 0.8014705882352942,
+        "auc_splice": 0.9553668411178039
+      }
+    }
+  },
+  "by_lang": {
+    "as": {
+      "n": 303,
+      "frame_eer": 0.11900514661034528,
+      "boundary_f1_80ms": 0.586080586080586,
+      "boundary_f1_40ms": 0.586080586080586,
+      "boundary_f1_80ms_spliced_only": 0.6177606177606177,
+      "boundary_prec_80ms": 0.8421052631578947,
+      "boundary_rec_80ms": 0.449438202247191,
+      "auc_splice": 0.8782421505827995,
+      "auc_synth": 0.9926829268292684
+    },
+    "bn": {
+      "n": 242,
+      "frame_eer": 0.12525486494461424,
+      "boundary_f1_80ms": 0.5943396226415094,
+      "boundary_f1_40ms": 0.5849056603773585,
+      "boundary_f1_80ms_spliced_only": 0.6176470588235294,
+      "boundary_prec_80ms": 0.863013698630137,
+      "boundary_rec_80ms": 0.45323741007194246,
+      "auc_splice": 0.9143847194050033,
+      "auc_synth": 0.9983333333333333
+    },
+    "brx": {
+      "n": 223,
+      "frame_eer": 0.15160928609285262,
+      "boundary_f1_80ms": 0.6199261992619927,
+      "boundary_f1_40ms": 0.6125461254612546,
+      "boundary_f1_80ms_spliced_only": 0.6511627906976745,
+      "boundary_prec_80ms": 0.8076923076923077,
+      "boundary_rec_80ms": 0.5029940119760479,
+      "auc_splice": 0.9167531568932711,
+      "auc_synth": 0.9902324183530355
+    },
+    "hi": {
+      "n": 735,
+      "frame_eer": 0.0204252644197096,
+      "boundary_f1_80ms": 0.5775577557755774,
+      "boundary_f1_40ms": 0.5742574257425743,
+      "boundary_f1_80ms_spliced_only": 0.6352087114337568,
+      "boundary_prec_80ms": 0.7383966244725738,
+      "boundary_rec_80ms": 0.4742547425474255,
+      "auc_splice": 0.877597587010596,
+      "auc_synth": 0.9999914505069849
+    },
+    "mr": {
+      "n": 297,
+      "frame_eer": 0.02280746370929171,
+      "boundary_f1_80ms": 0.46846846846846846,
+      "boundary_f1_40ms": 0.46846846846846846,
+      "boundary_f1_80ms_spliced_only": 0.5683060109289617,
+      "boundary_prec_80ms": 0.5416666666666666,
+      "boundary_rec_80ms": 0.4126984126984127,
+      "auc_splice": 0.8746179494303973,
+      "auc_synth": 1.0
+    }
+  },
+  "by_dataset": {
+    "indictts": {
+      "n": 768,
+      "frame_eer": 0.13040371667180106,
+      "boundary_f1_80ms": 0.6005291005291006,
+      "boundary_f1_40ms": 0.5952380952380952,
+      "boundary_f1_80ms_spliced_only": 0.6296809986130374,
+      "boundary_prec_80ms": 0.8345588235294118,
+      "boundary_rec_80ms": 0.4690082644628099,
+      "auc_splice": 0.9008233740142845,
+      "auc_synth": 0.9938592038882738
+    },
+    "indicsynth": {
+      "n": 364,
+      "frame_eer": NaN,
+      "boundary_f1_80ms": 0.0,
+      "boundary_f1_40ms": 0.0,
+      "boundary_f1_80ms_spliced_only": null,
+      "boundary_prec_80ms": 0.0,
+      "boundary_rec_80ms": 0.0,
+      "auc_splice": null,
+      "auc_synth": null
+    },
+    "fleurs": {
+      "n": 668,
+      "frame_eer": 0.2677628145431338,
+      "boundary_f1_80ms": 0.5896103896103896,
+      "boundary_f1_40ms": 0.587012987012987,
+      "boundary_f1_80ms_spliced_only": 0.6185286103542235,
+      "boundary_prec_80ms": 0.8254545454545454,
+      "boundary_rec_80ms": 0.4585858585858586,
+      "auc_splice": 0.8153374941098407,
+      "auc_synth": null
+    }
+  },
+  "mixed_all": {
+    "n": 1800,
+    "frame_eer": 0.06994483199770302,
+    "boundary_f1_80ms": 0.5732323232323232,
+    "boundary_f1_40ms": 0.5694444444444444,
+    "boundary_f1_80ms_spliced_only": 0.6240549828178693,
+    "boundary_prec_80ms": 0.7504132231404959,
+    "boundary_rec_80ms": 0.4637385086823289,
+    "auc_splice": 0.8868618110754082,
+    "auc_synth": 0.9985514380045631
+  },
+  "synth_within_corpus_indictts_auc": 0.9938592038882738,
+  "eval_seconds": 1406.4195466041565
+}

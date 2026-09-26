@@ -63,7 +63,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--ckpt", default="ml/runs/spliceloc/best.pt"); ap.add_argument("--n", type=int, default=400)
     ap.add_argument("--manifest", default="data/manifests/audio_split.parquet"); ap.add_argument("--no-wandb", action="store_true")
     a = ap.parse_args(); dev = "cuda"
-    ck = torch.load(a.ckpt, map_location="cpu"); thr = float(ck["metrics"].get("boundary_thr", 0.5))
+    ck = torch.load(a.ckpt, map_location="cpu", weights_only=True); thr = float(ck["metrics"].get("boundary_thr", 0.5))
     model = SpliceLoc().to(dev); model.load_state_dict(ck["model"]); model.eval()
     R = {"ckpt": a.ckpt, "epoch": ck["epoch"], "boundary_thr_from_val": thr, "n_per_set": a.n, "mixed_by_gen": {}, "per_op": {}, "by_lang": {}, "by_dataset": {}}
     t0 = time.time(); allc = None

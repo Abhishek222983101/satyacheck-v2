@@ -229,6 +229,28 @@ def evaluate(model, loader, device, max_batches=None):
     return m, (bp, bg)
 
 
+# ----------------------------------------------------------------------------- EMA
+class EMA:
+    """Exponential moving average of all float weights; evaluation/checkpoints use the averaged weights, which
+    removes most of the epoch-to-epoch validation bounce seen with batch-12 SGD noise."""
+    def __init__(self, model, decay: float):
+        self.decay = decay
+        self.keys = [k for k, v in model.state_dict().items() if v.dtype.is_floating_point]
+        self.shadow = [model.state_dict()[k].detach().clone() for k in self.keys]
+
+    @torch.no_grad()
+    def update(self, model):
+        sd = model.state_dict()
+        torch._foreach_lerp_(self.shadow, [sd[k].detach() for k in self.keys], 1 - self.decay)
+
+    @torch.no_grad()
+    def swap(self, model):
+        """Exchange live and averaged weights in place (call twice to restore)."""
+        sd = model.state_dict()
+        for k, sh in zip(self.keys, self.shadow):
+            t = sd[k].detach().clone(); sd[k].copy_(sh); sh.copy_(t)
+
+
 # ----------------------------------------------------------------------------- train
 def main():
     from ml.data.dataset_splice import SpliceDataset
@@ -237,12 +259,16 @@ def main():
     ap.add_argument("--epochs", type=int, default=10)
     ap.add_argument("--epoch-len", type=int, default=3600)
     ap.add_argument("--val-len", type=int, default=600)
-    ap.add_argument("--bs", type=int, default=12)
+    ap.add_argument("--bs", type=int, default=24)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--warm-epochs", type=int, default=1)
     ap.add_argument("--unfreeze-from", type=int, default=4)
-    ap.add_argument("--lr-head", type=float, default=1e-3)
-    ap.add_argument("--lr-ssl", type=float, default=2e-5)
+    ap.add_argument("--lr-head", type=float, default=5e-4)
+    ap.add_argument("--lr-ssl", type=float, default=1e-5)
+    ap.add_argument("--ema", type=float, default=0.995)
+    ap.add_argument("--tf-start", type=float, default=0.5, help="P(use GT boundaries for attention masks) at epoch 0")
+    ap.add_argument("--tf-end", type=float, default=0.5, help="... at the last epoch (scheduled sampling: lower = train on own predicted cuts)")
+    ap.add_argument("--manifest-tag", default="")
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--no-wandb", action="store_true")
     ap.add_argument("--out", default="ml/runs/spliceloc")
@@ -261,6 +287,7 @@ def main():
     head_params = [p for n, p in model.named_parameters() if not n.startswith("ssl.")]
     ssl_params = [p for n, p in model.named_parameters() if n.startswith("ssl.")]
     opt = torch.optim.AdamW([{"params": head_params, "lr": a.lr_head}, {"params": ssl_params, "lr": a.lr_ssl}], weight_decay=0.01)
+    ema = EMA(model, a.ema) if a.ema > 0 else None
     steps_total = a.epochs * (len(trl))
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda s: min(1.0, (s + 1) / 100) * 0.5 * (1 + math.cos(math.pi * min(1.0, s / max(steps_total, 1)))))
 
@@ -281,12 +308,13 @@ def main():
             bt = {k: v.to(dev, non_blocking=True) for k, v in b.items()}
             nvs = (bt["valid"].sum(1) * 320).long().clamp(max=wav.shape[1])
             with torch.autocast("cuda", dtype=torch.bfloat16):
-                o = model(wav, nvs, gt_boundary=bt["boundary"], valid=bt["valid"])
+                o = model(wav, nvs, gt_boundary=bt["boundary"], valid=bt["valid"], teacher_p=a.tf_start + (a.tf_end - a.tf_start) * ep / max(1, a.epochs - 1))
                 loss, parts = compute_loss(o, bt)
             opt.zero_grad(set_to_none=True)
             loss.backward()
             gn = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step(); sched.step(); step += 1
+            if ema is not None: ema.update(model)
             for k, v in parts.items():
                 agg[k] = agg.get(k, 0) + v
             if step % 10 == 0:
@@ -294,8 +322,11 @@ def main():
                        "lr_head": opt.param_groups[0]["lr"], "lr_ssl": opt.param_groups[1]["lr"], "epoch": ep}
                 if run: run.log(msg, step=step)
                 print(f"ep{ep} step{step} loss {loss.item():.3f} " + " ".join(f"{k} {v:.3f}" for k, v in parts.items()), flush=True)
+        if ema is not None: ema.swap(model)
         m, (bp, bg) = evaluate(model, val, dev)
-        score = np.nanmean([m["auc_synth"], m["auc_splice"], m["boundary_f1"], 1 - m["frame_eer"]])
+        # selection follows the problem statement (splicing): splice detection + cut localisation + synthetic voice.
+        # frame_eer is logged but excluded: it mixes whole-clip-synthetic labels with local-insertion labels.
+        score = np.nanmean([m["auc_synth"], m["auc_splice"], m["boundary_f1"]])
         print(f"== epoch {ep} ({time.time()-t0:.0f}s) score {score:.4f} " + " ".join(f"{k} {v:.3f}" for k, v in m.items()), flush=True)
         if run:
             import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
@@ -308,8 +339,9 @@ def main():
             run.log({**{f"val/{k}": v for k, v in m.items()}, "val/score": score, "val/examples": wandb.Image(fig)}, step=step); plt.close(fig)
         if score > best:
             best = score
-            torch.save({"model": model.state_dict(), "metrics": m, "epoch": ep, "args": vars(a)}, out / "best.pt")
+            torch.save({"model": model.state_dict(), "metrics": m, "epoch": ep, "args": vars(a), "ema": a.ema}, out / "best.pt")
             print(f"   saved best ({score:.4f})", flush=True)
+        if ema is not None: ema.swap(model)          # restore live weights before training continues
     if run:
         run.summary["best_score"] = best; run.finish()
 

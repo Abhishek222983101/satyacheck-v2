@@ -40,12 +40,16 @@ class Preprocessed:
     mel: np.ndarray                 # (M,80) float32 log-mel @100 fps
     wav: np.ndarray                 # (N,) float32 16 kHz mono
     face_ok: np.ndarray             # (T,) bool: real detection (not interpolated/none)
+    pts_norm: np.ndarray | None = None   # (T,478,2) float16 landmarks in [0,1] image coords (reusable across re-encodes)
+    blend: np.ndarray | None = None      # (T,4) float32 blendshapes
     meta: dict = field(default_factory=dict)
 
 
 # ----------------------------------------------------------------------------- decode
-def decode(path: str, max_s: float = MAX_S):
-    """-> frames (T,H,W,3) uint8 @25 fps CFR (nearest-time), wav float32 16 kHz mono, info dict."""
+def decode(path: str, max_s: float = MAX_S, max_side: int = 960):
+    """-> frames (T,H,W,3) uint8 @25 fps CFR (nearest-time), wav float32 16 kHz mono, info dict.
+    Frames are downscaled at decode time to <= max_side px on the long side (WhatsApp itself caps at ~848), which keeps
+    memory and CPU bounded on 1080p/4K uploads. info['width'/'height'] describe the PROCESSED frames."""
     frames_t, frames = [], []
     with av.open(path) as c:
         vs = c.streams.video[0]
@@ -58,6 +62,10 @@ def decode(path: str, max_s: float = MAX_S):
                 if isinstance(fr, av.VideoFrame):
                     t = float(fr.pts * vs.time_base) if fr.pts is not None else len(frames) / 25
                     if t <= max_s + 0.1:
+                        w0, h0 = fr.width, fr.height
+                        sc = min(1.0, max_side / max(w0, h0))
+                        if sc < 1.0:
+                            fr = fr.reformat(width=int(round(w0 * sc / 2)) * 2, height=int(round(h0 * sc / 2)) * 2, format="rgb24", interpolation="AREA")
                         frames_t.append(t); frames.append(fr.to_ndarray(format="rgb24"))
                 elif rs is not None:
                     for g in rs.resample(fr):
@@ -239,7 +247,10 @@ def speech_ratio(wav: np.ndarray) -> float:
 
 
 # ----------------------------------------------------------------------------- entry point
-def preprocess(path: str, on_stage=None) -> Preprocessed:
+def preprocess(path: str, on_stage=None, lm: dict | None = None, vad: bool = True) -> Preprocessed:
+    """lm: reuse landmarks from another encode of the SAME clip: {'pts_norm','blend','ok','tiles','presence'}.
+    Geometry does not change under re-encoding, so degraded copies skip the (slow) face tracking. Never use `lm`
+    for a clip whose frame count/timing differs."""
     import time
     tm, t0 = {}, time.time()
     def stage(name):
@@ -250,14 +261,27 @@ def preprocess(path: str, on_stage=None) -> Preprocessed:
     T = len(frames)
     if T < FPS * 2:
         info["too_short"] = True
-    pts, bl, ok, tiles, presence = track_faces(frames) if T else (np.zeros((0, 478, 2), np.float32), np.zeros((0, 4), np.float32), np.zeros(0, bool), False, 0.0)
+    if T and lm is not None:
+        H, W = frames.shape[1:3]
+        pts = (lm["pts_norm"][:T].astype(np.float32) * [W, H]).astype(np.float32)
+        if len(pts) < T:   # re-encode one frame shorter/longer: pad by holding the last track
+            pts = np.concatenate([pts, np.repeat(pts[-1:], T - len(pts), 0)])
+        bl, ok, tiles, presence = lm["blend"][:T], lm["ok"][:T], lm["tiles"], lm["presence"]
+        if len(bl) < T:
+            bl = np.concatenate([bl, np.repeat(bl[-1:], T - len(bl), 0)]); ok = np.concatenate([ok, np.repeat(ok[-1:], T - len(ok))])
+    elif T:
+        pts, bl, ok, tiles, presence = track_faces(frames)
+    else:
+        pts, bl, ok, tiles, presence = np.zeros((0, 478, 2), np.float32), np.zeros((0, 4), np.float32), np.zeros(0, bool), False, 0.0
     stage("landmarks")
     roi, mats = align_and_crop(frames, pts) if T else (np.zeros((0, 88, 88), np.uint8), [])
     faces = face_crops(frames, mats) if T else np.zeros((16, 224, 224, 3), np.uint8)
     kin = np.stack([_kin(pts[t], bl[t]) if not np.isnan(pts[t]).any() else np.zeros(8, np.float32) for t in range(T)]) if T else np.zeros((0, 8), np.float32)
     stage("align")
-    mel = log_mel(wav); sr = speech_ratio(wav) if info["has_audio"] else 0.0; stage("audio")
+    mel = log_mel(wav); sr = speech_ratio(wav) if (vad and info["has_audio"]) else (0.0 if not info["has_audio"] else -1.0); stage("audio")
     meta = {**info, "fps": FPS, "frames": T, "face_presence": float(presence),
             "face_detected_via_tiles": bool(tiles), "speech_ratio": sr, "timings_ms": tm,
-            "no_face": presence < 0.4, "no_speech": sr < 0.15}
-    return Preprocessed(roi=roi, faces=faces, kin=kin, mel=mel, wav=wav, face_ok=ok, meta=meta)
+            "no_face": presence < 0.4, "no_speech": (sr < 0.15) if sr >= 0 else False}
+    H_, W_ = (frames.shape[1:3] if T else (1, 1))
+    pn = (pts / [W_, H_]).astype(np.float16) if T else None
+    return Preprocessed(roi=roi, faces=faces, kin=kin, mel=mel, wav=wav, face_ok=ok, pts_norm=pn, blend=bl, meta=meta)
