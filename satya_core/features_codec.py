@@ -108,7 +108,7 @@ def extract(path: str, max_s: float = 10.0):
 
     types, sizes, mv_mag, gray_i, ts = [], [], [], [], []
     with av.open(path) as c:
-        vs = c.streams.video[0]; vs.thread_type = "AUTO"
+        vs = c.streams.video[0]; vs.thread_type = "AUTO"; vs.codec_context.thread_count = 2
         vs.codec_context.options = {"flags2": "+export_mvs"}
         for pkt in c.demux(vs):
             if pkt.dts is None:

@@ -53,6 +53,7 @@ def decode(path: str, max_s: float = MAX_S, max_side: int = 960):
     frames_t, frames = [], []
     with av.open(path) as c:
         vs = c.streams.video[0]
+        vs.thread_type = "AUTO"; vs.codec_context.thread_count = 2      # bounded: 8 parallel workers x default pool thrashes
         has_audio = len(c.streams.audio) > 0
         chunks = []
         rs = av.AudioResampler(format="fltp", layout="mono", rate=SR) if has_audio else None
