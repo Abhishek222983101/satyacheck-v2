@@ -1,0 +1,81 @@
+{
+  "schema_version": "2.0",
+  "id": "01TESTFIXTURE",
+  "file": {
+    "name": "clip.mp4",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "duration_s": 8.4,
+    "assessed_s": 8.4,
+    "width": 640,
+    "height": 360,
+    "fps": 25,
+    "has_audio": true
+  },
+  "verdict": {
+    "label": "FAKE",
+    "p_fake": 0.93,
+    "integrity": 7,
+    "conformal_set": [
+      "FAKE"
+    ],
+    "alpha": 0.05,
+    "bucket": "gen_2_3",
+    "reason": null,
+    "headline_en": "Lip movement stops matching the voice at 3.1–5.0 s.",
+    "headline_hi": "3.1–5.0 सेकंड पर होंठ आवाज़ से मेल नहीं खाते।"
+  },
+  "branches": {
+    "sync": {
+      "status": "ok",
+      "p_fake": 0.91,
+      "offset_ms": 320,
+      "gate_w": 0.46,
+      "curve": [
+        0.1,
+        0.2
+      ],
+      "spans": [
+        {
+          "t0": 3.1,
+          "t1": 5.0,
+          "score": 0.94
+        }
+      ]
+    },
+    "splice": {
+      "status": "ok",
+      "p_spliced": 0.12,
+      "p_synthetic": 0.08,
+      "boundaries": []
+    },
+    "face": {
+      "status": "abstained",
+      "reason": "no_face"
+    },
+    "age": {
+      "status": "ok",
+      "gen_hat": 2.6,
+      "gen_dist": [
+        0.02,
+        0.08,
+        0.31,
+        0.41,
+        0.14,
+        0.04
+      ],
+      "platform": {
+        "whatsapp": 0.88
+      },
+      "why": [
+        "audio bandwidth 9.8 kHz"
+      ]
+    }
+  },
+  "timings_ms": {
+    "total": 3860
+  },
+  "models": {
+    "syncformer": "2.0.3+sha:ab12"
+  },
+  "mode": "live"
+}

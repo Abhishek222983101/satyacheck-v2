@@ -1,0 +1,9 @@
+[project]
+name = "satyacheck"
+version = "2.0.0"
+requires-python = ">=3.11,<3.12"
+description = "SatyaCheck v2 — compression-robust audio-visual forensics (CX0102)"
+[tool.pytest.ini_options]
+testpaths = ["tests", "ml/tests"]
+[tool.setuptools]
+packages = ["satya_core", "server", "ml"]

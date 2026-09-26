@@ -1,0 +1,419 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://satyacheck/analysis.schema.json",
+  "title": "AnalysisResult",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "file",
+    "verdict",
+    "branches",
+    "timings_ms",
+    "models",
+    "mode"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "unit": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "span": {
+      "type": "object",
+      "required": [
+        "t0",
+        "t1",
+        "score"
+      ],
+      "properties": {
+        "t0": {
+          "type": "number",
+          "minimum": 0
+        },
+        "t1": {
+          "type": "number",
+          "minimum": 0
+        },
+        "score": {
+          "$ref": "#/$defs/unit"
+        }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "abstained",
+        "error",
+        "skipped"
+      ]
+    },
+    "abstain": {
+      "enum": [
+        "no_speech",
+        "no_face",
+        "too_short",
+        "uncertain",
+        "branch_conflict",
+        "heavy_degradation"
+      ]
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": "2.0"
+    },
+    "id": {
+      "type": "string"
+    },
+    "file": {
+      "type": "object",
+      "required": [
+        "name",
+        "sha256",
+        "duration_s",
+        "assessed_s",
+        "has_audio"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        },
+        "duration_s": {
+          "type": "number"
+        },
+        "assessed_s": {
+          "type": "number"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "fps": {
+          "type": "number"
+        },
+        "has_audio": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "verdict": {
+      "type": "object",
+      "required": [
+        "label",
+        "p_fake",
+        "integrity",
+        "conformal_set",
+        "alpha",
+        "bucket",
+        "reason",
+        "headline_en",
+        "headline_hi"
+      ],
+      "properties": {
+        "label": {
+          "enum": [
+            "REAL",
+            "SUSPECT",
+            "FAKE"
+          ]
+        },
+        "p_fake": {
+          "$ref": "#/$defs/unit"
+        },
+        "integrity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "conformal_set": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "REAL",
+              "FAKE"
+            ]
+          },
+          "maxItems": 2,
+          "uniqueItems": true
+        },
+        "alpha": {
+          "$ref": "#/$defs/unit"
+        },
+        "bucket": {
+          "enum": [
+            "gen_0_1",
+            "gen_2_3",
+            "gen_4_5"
+          ]
+        },
+        "reason": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/abstain"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "headline_en": {
+          "type": "string"
+        },
+        "headline_hi": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "branches": {
+      "type": "object",
+      "required": [
+        "sync",
+        "splice",
+        "face",
+        "age"
+      ],
+      "properties": {
+        "sync": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "reason": {
+              "$ref": "#/$defs/abstain"
+            },
+            "p_fake": {
+              "$ref": "#/$defs/unit"
+            },
+            "offset_ms": {
+              "type": "number"
+            },
+            "gate_w": {
+              "type": "number"
+            },
+            "curve": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "spans": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/span"
+              }
+            },
+            "heatmap_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "splice": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "reason": {
+              "$ref": "#/$defs/abstain"
+            },
+            "p_spliced": {
+              "$ref": "#/$defs/unit"
+            },
+            "p_synthetic": {
+              "$ref": "#/$defs/unit"
+            },
+            "gate_w": {
+              "type": "number"
+            },
+            "frame_spoof": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "boundaries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "t",
+                  "strength"
+                ],
+                "properties": {
+                  "t": {
+                    "type": "number"
+                  },
+                  "strength": {
+                    "$ref": "#/$defs/unit"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "face": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "reason": {
+              "$ref": "#/$defs/abstain"
+            },
+            "p_fake": {
+              "$ref": "#/$defs/unit"
+            },
+            "gate_w": {
+              "type": "number"
+            },
+            "frames": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "cam_refs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "age": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "gen_hat": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "gen_dist": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 6,
+              "maxItems": 6
+            },
+            "platform": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "why": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "timeline": {
+      "type": "object",
+      "properties": {
+        "fps": {
+          "type": "number"
+        },
+        "speech": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "mouth_open": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "annotation": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "ok",
+            "unavailable"
+          ]
+        },
+        "words": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "w",
+              "t0",
+              "t1"
+            ],
+            "properties": {
+              "w": {
+                "type": "string"
+              },
+              "t0": {
+                "type": "number"
+              },
+              "t1": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "timings_ms": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      },
+      "required": [
+        "total"
+      ]
+    },
+    "models": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "mode": {
+      "enum": [
+        "live",
+        "offline_fallback",
+        "chain_gen_k"
+      ]
+    }
+  }
+}

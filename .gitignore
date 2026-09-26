@@ -41,3 +41,16 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# SatyaCheck v2
+data/
+var/
+logs/
+models/*.onnx
+ml/runs/
+mlruns/
+wandb/
+*.npy
+.venv/
+envs/
+__pycache__/
