@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, upload } from "@/lib/api";
+import AnalysisPicker from "@/components/AnalysisPicker";
 import { useLang } from "@/lib/i18n";
 
 type Word = { w: string; t0: number; t1: number; conf?: number };
@@ -69,10 +70,12 @@ export default function RedTeamPage() {
         the server makes the tampered clip, then you can scan it on the Desk and see whether it gets caught.
       </p>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
+      <div className="mt-5 grid max-w-[720px] gap-3">
+        <AnalysisPicker value={mediaId} onPick={(m) => { setMediaId(m.media_id); setWords(null); setAttackUrl(null); }} />
+        <div className="flex flex-wrap items-center gap-3">
         <input
           className="panel px-3 py-2 t-small t-num w-[380px] max-w-full"
-          placeholder="media id from a Desk analysis"
+          placeholder="…or paste a media id"
           value={mediaId}
           onChange={(e) => {
             setMediaId(e.target.value); setWords(null); setAttackUrl(null);
@@ -80,6 +83,7 @@ export default function RedTeamPage() {
           }}
         />
         <button className="btn" onClick={loadWords} disabled={mediaId.trim().length < 8}>Load words</button>
+        </div>
       </div>
       {err ? <p className="t-small mt-2" style={{ color: "var(--seal-fake)" }}>{err}</p> : null}
 

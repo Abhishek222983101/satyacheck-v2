@@ -23,7 +23,10 @@ class Fuser:
         raw = [m1.get("clip_score"), m2.get("p_spliced"), m2.get("p_synthetic"), m4.get("clip_score")]
         S = np.array([[float(logit(v)) if (o and v is not None) else 0.0 for v, o in zip(raw, ok)]], np.float32)
         gen_hat = float(m3["gen_hat"])
-        C = np.array([[gen_hat / 5.0, float(meta.get("face_presence") or 0), float(np.clip(meta.get("speech_ratio") or 0, 0, 1))]], np.float32)
+        fp, sr = float(meta.get("face_presence") or 0), float(np.clip(meta.get("speech_ratio") or 0, 0, 1))
+        C = np.array([[gen_hat / 5.0 if np.isfinite(gen_hat) else 0.0,
+                       fp if np.isfinite(fp) else 0.0,
+                       sr if np.isfinite(sr) else 0.0]], np.float32)  # NaN context -> neutral, never NaN verdict
         with torch.no_grad():
             z, g = self.net(torch.from_numpy(S), torch.from_numpy(ok[None]), torch.from_numpy(C))
         p = float(torch.sigmoid(z / self.T)[0]); gate = g[0].numpy()

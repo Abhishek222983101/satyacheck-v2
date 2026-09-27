@@ -1,5 +1,6 @@
-// API base resolution (blueprint P9.1): /api-base.json -> env -> localhost:8000.
-// api-base.json is written at deploy time, so the same build works against a tunnel URL.
+// API base resolution: /api-base.json (written at deploy with the tunnel URL) ->
+// env override -> same-origin (Next rewrites /v1/* to the API, so no CORS in dev either).
+// A `"base": ""` means same-origin and is the default.
 let cached = "";
 
 export async function apiBase(): Promise<string> {
@@ -12,10 +13,11 @@ export async function apiBase(): Promise<string> {
     const r = await fetch("/api-base.json", { cache: "no-store" });
     if (r.ok) {
       const j = await r.json();
-      if (j?.base) { cached = j.base; return cached; }
+      cached = typeof j?.base === "string" ? j.base : "";
+      return cached;
     }
-  } catch { /* file absent in dev */ }
-  cached = "http://localhost:8000";
+  } catch { /* file absent — same-origin below */ }
+  cached = "";
   return cached;
 }
 

@@ -162,3 +162,19 @@ async def media(aid: str):
     if not m:
         raise HTTPException(404, "no such media")
     return FileResponse(m.path, media_type="video/mp4")
+
+
+@router.get("/analyses")
+async def list_analyses(limit: int = 20):
+    """Recent analyses for the Chain/Red-team pickers (safe subset only — no result JSON)."""
+    limit = max(1, min(limit, 50))
+    with Session(engine) as s:
+        rows = s.exec(select(Analysis).order_by(Analysis.created_at.desc()).limit(limit)).all()
+        out = []
+        for a in rows:
+            m = s.get(Media, a.media_id)
+            name = m.path.split("/")[-1] if m else ""
+            out.append({"analysis_id": a.id, "media_id": a.media_id, "status": a.status,
+                        "label": a.label, "created_at": a.created_at.isoformat() if a.created_at else None,
+                        "name": name})
+    return {"analyses": out}

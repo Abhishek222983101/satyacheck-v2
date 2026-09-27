@@ -10,10 +10,13 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import math
 import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+import numpy as np
 
 MODELS: dict[str, str] = {"syncformer": "syncformer_best.pt", "spliceloc": "spliceloc_v2/best.pt",
                           "facetrace": "facetrace_v2/best.pt", "forwardage": "forwardage_lgbm",
@@ -113,8 +116,21 @@ def _headlines(label: str, gen_hat: float) -> tuple[str, str]:
     return en, hi
 
 
-def _downsample(arr: list | None, cap: int = 600) -> list:
-    arr = [round(float(x), 4) for x in (arr or [])]
+def _num(x, nd: int = 4, fallback: float = 0.0) -> float:
+    """JSON-safe number: non-finite (NaN/inf from edge-case clips) never reaches the wire.
+    Scores fall back to 0.5-equivalent neutrality via the caller's fallback; geometry to 0."""
+    try:
+        f = float(x)
+    except (TypeError, ValueError):
+        return fallback
+    return round(f, nd) if math.isfinite(f) else fallback
+
+
+def _downsample(arr, cap: int = 600) -> list:
+    if arr is None:
+        return []
+    vals = np.asarray(arr).ravel().tolist()  # numpy or list, either way
+    arr = [_num(x) for x in vals]
     if len(arr) <= cap:
         return arr
     step = len(arr) / cap
@@ -124,30 +140,31 @@ def _downsample(arr: list | None, cap: int = 600) -> list:
 def _adapt(run: dict, media_row, mode: str) -> dict:
     """satya_core output -> AnalysisResult v2 dict, exactly the contract's shape."""
     b, meta, v = run["branches"], run["meta"], run.get("verdict") or {}
-    gen_hat = float(b.m3.get("gen_hat") or 0.0)
+    gen_hat = _num(b.m3.get("gen_hat"), 3)
     m1, m2, m4, m3 = b.m1, b.m2, b.m4, b.m3
     verdict = {
-        "label": v.get("label", "SUSPECT"), "p_fake": round(float(v.get("p_fake", 0.5)), 4),
-        "integrity": int(v.get("integrity", 50)), "conformal_set": v.get("conformal_set", ["REAL", "FAKE"]),
-        "alpha": float(v.get("alpha", 0.05)), "bucket": v.get("bucket", "gen_0_1"),
+        "label": v.get("label", "SUSPECT"), "p_fake": _num(v.get("p_fake", 0.5), 4, 0.5),
+        "integrity": max(0, min(100, int(v.get("integrity", 50) if math.isfinite(float(v.get("integrity", 50))) else 50))), "conformal_set": v.get("conformal_set", ["REAL", "FAKE"]),
+        "alpha": _num(v.get("alpha", 0.05), 4, 0.05), "bucket": v.get("bucket", "gen_0_1"),
         "reason": v.get("reason"), **dict(zip(("headline_en", "headline_hi"), _headlines(v.get("label", "SUSPECT"), gen_hat))),
     }
+    _gen_dist = m3.get("gen_dist"); _gen_dist = [0.0] * 6 if _gen_dist is None else _gen_dist
     branches = {
         "sync": {"status": m1["status"], "reason": m1.get("reason"),
-                 **({"p_fake": round(float(m1["clip_score"]), 4), "offset_ms": float(m1["offset_ms"]),
-                     "curve": _downsample(m1.get("sync_prob") and m1["sync_prob"].mean(0).tolist()),
-                     "spans": [{"t0": round(t0, 2), "t1": round(t1, 2), "score": round(s, 4)} for t0, t1, s in m1.get("spans", [])]}
+                 **({"p_fake": _num(m1["clip_score"], 4, 0.5), "offset_ms": _num(m1["offset_ms"], 1),
+                     "curve": _downsample(m1["sync_prob"].mean(0).tolist() if m1.get("sync_prob") is not None else None),
+                     "spans": [{"t0": _num(t0, 2), "t1": _num(t1, 2), "score": _num(s)} for t0, t1, s in m1.get("spans", [])]}
                     if m1["status"] == "ok" else {})},
         "splice": {"status": m2["status"], "reason": m2.get("reason"),
-                   **({"p_spliced": round(float(m2["p_spliced"]), 4), "p_synthetic": round(float(m2["p_synthetic"]), 4),
+                   **({"p_spliced": _num(m2["p_spliced"], 4, 0.5), "p_synthetic": _num(m2["p_synthetic"], 4, 0.5),
                        "frame_spoof": _downsample(m2.get("frame_spoof")),
-                       "boundaries": [{"t": round(x["t"], 3), "strength": round(x["strength"], 4)} for x in m2.get("boundaries", [])]}
+                       "boundaries": [{"t": _num(x["t"], 3), "strength": _num(x["strength"])} for x in m2.get("boundaries", [])]}
                       if m2["status"] == "ok" else {})},
         "face": {"status": m4["status"], "reason": m4.get("reason"),
-                 **({"p_fake": round(float(m4["clip_score"]), 4), "frames": _downsample(m4.get("frame_probs")), "cam_refs": []}
+                 **({"p_fake": _num(m4["clip_score"], 4, 0.5), "frames": _downsample(m4.get("frame_probs")), "cam_refs": []}
                     if m4["status"] == "ok" else {})},
         "age": {"status": m3["status"], "gen_hat": round(gen_hat, 3),
-                "gen_dist": [round(float(x), 4) for x in (m3.get("gen_dist") or [0] * 6)],
+                "gen_dist": [_num(x) for x in _gen_dist],
                 "platform": {}, "why": m3.get("why", [])},
     }
     for br in branches.values():  # contract: omit reason when null (enum forbids null)
@@ -156,14 +173,14 @@ def _adapt(run: dict, media_row, mode: str) -> dict:
     out = {
         "schema_version": "2.0", "id": media_row.id,
         "file": {"name": Path(media_row.path).name, "sha256": media_row.sha256,
-                 "duration_s": round(float(meta.get("duration_s") or media_row.duration_s or 0), 2),
-                 "assessed_s": round(float(meta.get("assessed_s") or 0), 2),
+                 "duration_s": _num(meta.get("duration_s") or media_row.duration_s or 0, 2),
+                 "assessed_s": _num(meta.get("assessed_s") or 0, 2),
                  "width": meta.get("width", media_row.width), "height": meta.get("height", media_row.height),
                  "has_audio": bool(meta.get("has_audio"))},
         "verdict": verdict,
         "branches": branches,
         "timeline": {"fps": meta.get("fps"), "speech": _downsample(meta.get("speech")), "mouth_open": _downsample(meta.get("mouth_open"))},
-        "timings_ms": {k: float(x) for k, x in run["timings_ms"].items()},
+        "timings_ms": {k: _num(x, 1) for k, x in run["timings_ms"].items()},
         "models": {k: hashlib.sha256(v.encode()).hexdigest()[:12] for k, v in MODELS.items()},
         "mode": mode,
     }

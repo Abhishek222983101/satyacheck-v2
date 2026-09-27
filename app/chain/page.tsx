@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { streamEvents } from "@/lib/sse";
 import { useLang } from "@/lib/i18n";
 import type { SSEEvent, VerdictLabel } from "@/lib/types";
+import AnalysisPicker from "@/components/AnalysisPicker";
 
 type Slot = { gen: number; url?: string; label?: VerdictLabel; p?: number; params?: Record<string, unknown> };
 const SEAL: Record<string, string> = { REAL: "var(--seal-real)", SUSPECT: "var(--seal-suspect)", FAKE: "var(--seal-fake)" };
@@ -56,17 +57,20 @@ export default function ChainPage() {
         and watch which checks keep catching it. Each frame below is a fresh re-encode, analysed live.
       </p>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <input
-          className="panel px-3 py-2 t-small t-num w-[380px] max-w-full"
-          placeholder="paste a media id from a Desk analysis (e.g. the case URL's id)"
-          value={mediaId} onChange={(e) => setMediaId(e.target.value)} disabled={running}
-        />
-        <button className="btn primary" onClick={startChain} disabled={running || mediaId.trim().length < 8}>
-          {running ? "forwarding…" : "Run the chain"}
-        </button>
+      <div className="mt-5 grid max-w-[720px] gap-3">
+        <AnalysisPicker value={mediaId} onPick={(m) => setMediaId(m.media_id)} />
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            className="panel px-3 py-2 t-small t-num w-[380px] max-w-full"
+            placeholder="…or paste a media id"
+            value={mediaId} onChange={(e) => setMediaId(e.target.value)} disabled={running}
+          />
+          <button className="btn primary" onClick={startChain} disabled={running || mediaId.trim().length < 8}>
+            {running ? "forwarding…" : "Run the chain"}
+          </button>
+        </div>
       </div>
-      <p className="t-small mt-1">Tip: analyse any clip on the Desk first, then paste its id here. Gen 1–5 run on the server.</p>
+      <p className="t-small mt-1">Pick a clip analysed on the Desk (or paste its id). Gen 1–5 run on the server.</p>
       {err ? <p className="t-small mt-2" style={{ color: "var(--seal-fake)" }}>{err}</p> : null}
 
       <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-5">

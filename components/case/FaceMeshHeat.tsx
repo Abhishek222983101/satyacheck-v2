@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { FilesetResolver, FaceLandmarker } from "@mediapipe/tasks-vision";
+import type { FaceLandmarker } from "@mediapipe/tasks-vision";
 
 type Props = { src: string; frames?: number[] };
 
@@ -65,7 +65,7 @@ function Mesh({ src, frames = [], setReady }: Props & { setReady: (b: boolean) =
       } catch { /* overlay model unavailable — panel stays empty but harmless */ }
     })();
     return () => { alive = false; lmRef.current?.close(); v.pause(); };
-  }, [src]);
+  }, [src, setReady]);
 
   // sample landmarks on a timer, lift z for depth, colour by heat
   useEffect(() => {

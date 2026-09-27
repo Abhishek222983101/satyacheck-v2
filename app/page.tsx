@@ -58,6 +58,11 @@ export default function Desk() {
     (async () => {
       try {
         const j = await upload(file, source);
+        const watchdog = setTimeout(() => {
+          setErr("The analysis stream went quiet for 3 minutes — the clip or the server may be stuck. Refresh and retry; nothing was lost.");
+          setBusy(false);
+          stopRef.current?.();
+        }, 180000);
         stopRef.current = streamEvents(j.id, (ev: SSEEvent) => {
           if (ev.event === "stage") {
             const name = ev.data.stage as (typeof STAGES)[number];
@@ -68,8 +73,10 @@ export default function Desk() {
           } else if (ev.event === "verdict") {
             setRail((r) => ({ done: STAGES.slice(0, 6) as unknown as string[], active: "verdict", ms: { ...r.ms, verdict: ev.data.timings_ms?.total ?? 0 } }));
           } else if (ev.event === "error") {
+            clearTimeout(watchdog);
             setErr(ev.data.detail); setBusy(false);
           } else if (ev.event === "end") {
+            clearTimeout(watchdog);
             router.push(`/case/${j.id}`);
           }
         });
