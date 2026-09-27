@@ -43,8 +43,17 @@ def main():
         return out
     run(a.out, "fp32")
     if a.int8:
+        # onnxsim first: folds the wav2vec pos_conv weight Mul into an initializer,
+        # which quantize_dynamic needs (raises "Expected ... to be an initializer" without it)
+        import onnx
+        from onnxsim import simplify
+        sim = a.out.replace(".onnx", ".sim.onnx")
+        m, ok = simplify(onnx.load(a.out))
+        assert ok, "onnxsim reported not-ok"
+        onnx.save(m, sim)
         from onnxruntime.quantization import quantize_dynamic, QuantType
-        q = a.out.replace(".onnx", ".int8.onnx"); quantize_dynamic(a.out, q, weight_type=QuantType.QInt8, per_channel=True)
+        q = a.out.replace(".onnx", ".int8.onnx")
+        quantize_dynamic(sim, q, weight_type=QuantType.QInt8, per_channel=True)
         print(f"int8 -> {q} ({Path(q).stat().st_size/1e6:.0f} MB)"); run(q, "int8")
 
 if __name__ == "__main__":

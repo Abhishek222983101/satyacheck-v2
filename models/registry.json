@@ -1,0 +1,118 @@
+{
+  "generated_by": "python -m ml.export.to_onnx",
+  "opset": 18,
+  "artifacts": {
+    "syncformer": {
+      "version": "v1-epoch15",
+      "onnx_path": "models/syncformer.onnx",
+      "sha256": "0ff90a2d3bb213f4",
+      "int8_path": "models/syncformer.int8.onnx",
+      "sha256_int8": "60192e17c4227e8c",
+      "input_spec": {
+        "roi": [
+          "B",
+          250,
+          88,
+          88
+        ],
+        "mel": [
+          "B",
+          1000,
+          80
+        ],
+        "kin": [
+          "B",
+          250,
+          8
+        ]
+      },
+      "outputs": [
+        "delta (B,T,32)",
+        "fake (B,T)"
+      ],
+      "trained_on": "TalkVid-Bench TalkVid-1199, speaker-disjoint"
+    },
+    "facetrace": {
+      "version": "v2",
+      "onnx_path": "models/facetrace.onnx",
+      "sha256": "f3900210ff5b50d7",
+      "int8_path": "models/facetrace.int8.onnx",
+      "sha256_int8": "0ff65e6e690f23c5",
+      "input_spec": {
+        "x": [
+          "B",
+          3,
+          224,
+          224
+        ]
+      },
+      "outputs": [
+        "p (B)"
+      ],
+      "trained_on": "self-blended pseudo-fakes on real faces, channel-shared"
+    },
+    "spliceloc": {
+      "version": "v2",
+      "onnx_path": "models/spliceloc.onnx",
+      "sha256": "a71c2af945fdce65",
+      "int8_path": "models/spliceloc.int8.onnx",
+      "sha256_int8": "591c4e4ecd6d7839",
+      "input_spec": {
+        "wav": [
+          "B",
+          160000
+        ],
+        "n_valid": [
+          "B"
+        ]
+      },
+      "outputs": [
+        "boundary (B,T)",
+        "frame (B,T,2)",
+        "utt (B,2)"
+      ],
+      "trained_on": "splice factory on-the-fly, IndicTTS/FLEURS audio"
+    },
+    "nyaya": {
+      "version": "nyaya-fit",
+      "onnx_path": "models/nyaya.onnx",
+      "sha256": "fc3bc7cbaa5ae413",
+      "input_spec": {
+        "S": [
+          "B",
+          4
+        ],
+        "M": [
+          "B",
+          4
+        ],
+        "C": [
+          "B",
+          3
+        ]
+      },
+      "outputs": [
+        "z (B)",
+        "g (B,4)"
+      ],
+      "calib": {
+        "T": 0.7060640680950756,
+        "qhat_by_bucket": {
+          "0": 0.8069592118263245,
+          "1": 0.7992595434188843,
+          "2": 0.7751855850219727
+        },
+        "alpha": 0.05
+      },
+      "trained_on": "nyaya_{val,cal,test} speaker-disjoint splits"
+    }
+  },
+  "metrics_ref": "ml/reports/benchmark.json",
+  "serving": {
+    "syncformer": "int8",
+    "facetrace": "fp32",
+    "spliceloc": "int8",
+    "nyaya": "fp32"
+  },
+  "int8_gate_ref": "ml/reports/int8_gate.json"
+}

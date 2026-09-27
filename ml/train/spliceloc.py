@@ -58,6 +58,7 @@ class SpliceLoc(nn.Module):
         cfg.apply_spec_augment, cfg.mask_time_prob, cfg.mask_feature_prob = False, 0.0, 0.0
         self.ssl = Wav2Vec2Model.from_pretrained(ssl_path, config=cfg)
         self.ssl.freeze_feature_encoder()
+        self.ssl_hidden = cfg.hidden_size          # static: keeps layer_norm exportable (P8.1 pad-with-shape fix)
         self.use = list(use_layers)
         self.lw = nn.Parameter(torch.zeros(len(self.use)))
         self.proj = nn.Sequential(nn.LayerNorm(cfg.hidden_size), nn.Linear(cfg.hidden_size, d))
@@ -95,7 +96,7 @@ class SpliceLoc(nn.Module):
         ctx = torch.no_grad() if self.ssl_frozen else torch.enable_grad()
         with ctx:
             hs = self.ssl(x, output_hidden_states=True).hidden_states
-        st = torch.stack([F.layer_norm(hs[i], hs[i].shape[-1:]) for i in self.use], 0)      # (L,B,T,1024)
+        st = torch.stack([F.layer_norm(hs[i], (self.ssl_hidden,)) for i in self.use], 0)  # (L,B,T,1024)
         w = torch.softmax(self.lw, 0)[:, None, None, None]
         return self.proj((st * w).sum(0))                                                    # (B,T,d)
 
