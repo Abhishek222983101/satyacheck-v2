@@ -4,9 +4,14 @@ import Link from "next/link";
 import { api, apiBase } from "../../../lib/api";
 import { useLang } from "../../../lib/i18n";
 import type { AnalysisResult } from "../../../lib/types";
+import dynamic from "next/dynamic";
 import ClipTable from "../../../components/case/ClipTable";
 import { AgeDial, DecisionTrace, FaceTraceStrip, SEAL_COLOUR, SpliceScope, SyncScope } from "../../../components/case/Scopes";
 import OfflineFallback from "../../../components/case/OfflineFallback";
+
+const FaceMeshHeat = dynamic(() => import("../../../components/case/FaceMeshHeat"), {
+  ssr: false, loading: () => <div className="panel" style={{ height: 320 }} />,
+});
 
 export default function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -78,6 +83,12 @@ export default function CasePage({ params }: { params: Promise<{ id: string }> }
         <div className="md:col-span-5"><AgeDial r={r} /></div>
         <div className="md:col-span-7"><SpliceScope src={mediaUrl} r={r} /></div>
         <div className="md:col-span-5"><FaceTraceStrip r={r} /></div>
+        {r.branches.face.status === "ok" ? (
+          <div className="md:col-span-12">
+            <div className="chip mb-2"><span className="dot" style={{ background: "var(--signal-face)" }} />Face mesh — drag to orbit, colour = blend probability at this moment</div>
+            <FaceMeshHeat src={mediaUrl} frames={r.branches.face.frames ?? []} />
+          </div>
+        ) : null}
       </div>
     </div>
   );
