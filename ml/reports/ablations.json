@@ -1,0 +1,102 @@
+{
+  "what": "P6.3 branch ablations (refit-without-branch, same held-out test split) + P7 held-out generator generalisation",
+  "git_sha": "bc584b77769bc15f78cded10ccceabfa277e4a84",
+  "in_domain_ablations": {
+    "full": {
+      "auc": 0.8448,
+      "coverage": 0.9514,
+      "abstain": 0.4931,
+      "acc_committed": 0.9041
+    },
+    "drop_m1(sync)": {
+      "auc": 0.7148,
+      "coverage": 0.9306,
+      "abstain": 0.6215,
+      "acc_committed": 0.8165
+    },
+    "drop_m2(splice+synth)": {
+      "auc": 0.8066,
+      "coverage": 0.9653,
+      "abstain": 0.5897,
+      "acc_committed": 0.9154
+    },
+    "drop_m4(face)": {
+      "auc": 0.7962,
+      "coverage": 0.945,
+      "abstain": 0.5764,
+      "acc_committed": 0.8702
+    },
+    "only_m1": {
+      "auc": 0.7721,
+      "coverage": 0.9462,
+      "abstain": 0.6007,
+      "acc_committed": 0.8652
+    }
+  },
+  "baselines_in_domain": {
+    "mean_of_branches_auc": 0.7196,
+    "m1_score_auc": 0.7722,
+    "m2_splice_auc": 0.671,
+    "m2_synth_auc": 0.4861,
+    "m4_score_auc": 0.5929
+  },
+  "heldout_wav2lip_summary": {
+    "note": "unseen generator, end-to-end on files, Nyaya vs branches vs SyncNet zero-shot",
+    "by_gen": {
+      "0": {
+        "auc_nyaya": 0.929,
+        "auc_syncformer": 0.599,
+        "auc_facetrace": 0.974,
+        "auc_spliceloc": 0.734,
+        "auc_syncnet_zero_shot": 0.775,
+        "fake_called_REAL": 0.0,
+        "fake_abstained": 0.208,
+        "real_called_FAKE": 0.062
+      },
+      "1": {
+        "auc_nyaya": 0.811,
+        "auc_syncformer": 0.618,
+        "auc_facetrace": 0.838,
+        "auc_spliceloc": 0.762,
+        "auc_syncnet_zero_shot": 0.697,
+        "fake_called_REAL": 0.042,
+        "fake_abstained": 0.562,
+        "real_called_FAKE": 0.062
+      },
+      "3": {
+        "auc_nyaya": 0.777,
+        "auc_syncformer": 0.592,
+        "auc_facetrace": 0.73,
+        "auc_spliceloc": 0.797,
+        "auc_syncnet_zero_shot": 0.529,
+        "fake_called_REAL": 0.031,
+        "fake_abstained": 0.667,
+        "real_called_FAKE": 0.052
+      },
+      "5": {
+        "auc_nyaya": 0.678,
+        "auc_syncformer": 0.491,
+        "auc_facetrace": 0.661,
+        "auc_spliceloc": 0.761,
+        "auc_syncnet_zero_shot": 0.41,
+        "fake_called_REAL": 0.0,
+        "fake_abstained": 0.708,
+        "real_called_FAKE": 0.167
+      }
+    },
+    "by_kind": {
+      "full": {
+        "auc_nyaya": 0.767,
+        "auc_syncformer": 0.574,
+        "auc_syncnet_zero_shot": 0.662,
+        "auc_facetrace": 0.86
+      },
+      "partial": {
+        "auc_nyaya": 0.853,
+        "auc_syncformer": 0.575,
+        "auc_syncnet_zero_shot": 0.612,
+        "auc_facetrace": 0.765
+      }
+    }
+  }
+}
