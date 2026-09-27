@@ -188,11 +188,14 @@ function RecordButton({ onFile, label }: { onFile: (f: File) => void; label: str
         streamRef.current = null;
         if (chunks.length) onFile(new File(chunks, "my-clip.webm", { type: "video/webm" }));
       };
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
-      }
       mr.start(500); setRec(true); setLeft(8);
+      // the <video> element only mounts after setRec renders — attach on the next frame
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+      });
       ivRef.current = setInterval(() => setLeft((l) => {
         if (l <= 1) {
           if (ivRef.current) clearInterval(ivRef.current);
