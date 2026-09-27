@@ -24,20 +24,20 @@ export default function AnalysisPicker({ value, onPick }: { value: string; onPic
   return (
     <div className="panel px-3 py-2 t-small">
       <div className="mb-1" style={{ opacity: 0.75 }}>recent analyses{failed ? " (list unavailable — paste id below)" : ""}</div>
-      <div className="flex max-h-40 flex-col gap-1 overflow-y-auto">
+      <div className="flex max-h-40 flex-col gap-1 overflow-hidden overflow-y-auto">
         {rows.length === 0 ? <span style={{ opacity: 0.6 }}>none yet — analyse a clip on the Desk first</span> : null}
         {rows.map((r) => (
           <button
             key={r.analysis_id}
-            className="btn text-left"
+            className="btn min-w-0 text-left"
             style={{
               padding: "3px 8px", fontWeight: value === r.media_id ? 750 : 400,
               borderColor: value === r.media_id ? "var(--signal-sync)" : "var(--rule)",
             }}
             onClick={() => onPick({ media_id: r.media_id, analysis_id: r.analysis_id, name: r.name, label: r.label })}
           >
-            <span className="t-num">{r.name.slice(0, 28)}</span>
-            <span style={{ opacity: 0.65 }}> · {r.status}{r.label ? ` · ${r.label}` : ""}</span>
+            <span className="block truncate t-num">{r.name}</span>
+            <span className="shrink-0" style={{ opacity: 0.65 }}>{r.status}{r.label ? ` · ${r.label}` : ""}</span>
           </button>
         ))}
       </div>

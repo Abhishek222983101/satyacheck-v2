@@ -108,7 +108,7 @@ export default function ChainPage() {
           const s = slots.find((x) => x.gen === g);
           return (
             <div key={g} className="panel overflow-hidden">
-              <div className="relative grid place-items-center" style={{ background: "#0c0f10", aspectRatio: "9/14", border: s?.url ? undefined : "3px dashed var(--rule)" }}>
+              <div className="relative grid place-items-center" style={{ background: "#0c0f10", aspectRatio: "16/10", border: s?.url ? undefined : "3px dashed var(--rule)" }}>
                 {s?.url ? <video src={s.url} muted controls preload="metadata" className="h-full w-full object-cover" /> : (
                   <div className="px-3 text-center">
                     <div className="font-display text-[34px]" style={{ color: "#5a6367" }}>G{g}</div>
