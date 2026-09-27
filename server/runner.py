@@ -26,7 +26,10 @@ _lock = asyncio.Lock()
 
 async def emit(analysis_id: str, event: str, data: dict) -> None:
     async with _lock:
-        _events.setdefault(analysis_id, []).append({"event": event, "data": data})
+        log = _events.setdefault(analysis_id, [])
+        log.append({"event": event, "data": data})
+        if len(log) > 2000:  # bounded: a stuck stream can't grow memory forever
+            del log[:len(log) - 2000]
         for q in _queues.get(analysis_id, ()):
             q.put_nowait({"event": event, "data": data})
 

@@ -164,3 +164,15 @@ def test_redteam_splice_validation(client):
     _wait_done(client, j["id"])
     assert client.post("/v1/redteam/splice", json={"media_id": j["id"], "op": "nuke", "t0": 0, "t1": 1}).status_code == 422
     assert client.post("/v1/redteam/splice", json={"media_id": j["id"], "op": "delete", "t0": 5, "t1": 1}).status_code == 422
+
+
+def test_dossier_and_card(client):
+    j = _upload(client)
+    _wait_done(client, j["id"])
+    pdf = client.get(f"/v1/analyses/{j['id']}/dossier.pdf")
+    assert pdf.status_code == 200 and pdf.headers["content-type"] == "application/pdf"
+    card = client.get(f"/v1/analyses/{j['id']}/card.png?lang=hi")
+    assert card.status_code == 200 and card.headers["content-type"] == "image/png"
+    import io
+    from PIL import Image
+    assert Image.open(io.BytesIO(card.content)).size == (1080, 1350)

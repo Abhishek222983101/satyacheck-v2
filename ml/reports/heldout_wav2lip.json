@@ -1,0 +1,77 @@
+{
+  "n_files": 768,
+  "n_fake": 384,
+  "n_real": 384,
+  "by_gen": {
+    "0": {
+      "n": 192,
+      "auc_nyaya": 0.9293619791666667,
+      "auc_syncformer": 0.5985243055555556,
+      "auc_facetrace": 0.9735243055555556,
+      "auc_spliceloc": 0.7337782118055556,
+      "auc_syncnet_zero_shot": 0.7752821180555556,
+      "detected_as_FAKE": 0.7916666666666666,
+      "fake_called_REAL": 0.0,
+      "fake_abstained": 0.20833333333333334,
+      "real_called_FAKE": 0.0625,
+      "real_abstained": 0.7395833333333334
+    },
+    "1": {
+      "n": 192,
+      "auc_nyaya": 0.8111979166666666,
+      "auc_syncformer": 0.6178385416666669,
+      "auc_facetrace": 0.8384331597222223,
+      "auc_spliceloc": 0.7618272569444445,
+      "auc_syncnet_zero_shot": 0.6968315972222221,
+      "detected_as_FAKE": 0.3958333333333333,
+      "fake_called_REAL": 0.041666666666666664,
+      "fake_abstained": 0.5625,
+      "real_called_FAKE": 0.0625,
+      "real_abstained": 0.6354166666666666
+    },
+    "3": {
+      "n": 192,
+      "auc_nyaya": 0.7773437499999999,
+      "auc_syncformer": 0.5915570175438596,
+      "auc_facetrace": 0.7301535087719299,
+      "auc_spliceloc": 0.7966037326388888,
+      "auc_syncnet_zero_shot": 0.5285087719298247,
+      "detected_as_FAKE": 0.3020833333333333,
+      "fake_called_REAL": 0.03125,
+      "fake_abstained": 0.6666666666666666,
+      "real_called_FAKE": 0.052083333333333336,
+      "real_abstained": 0.71875
+    },
+    "5": {
+      "n": 192,
+      "auc_nyaya": 0.6783854166666667,
+      "auc_syncformer": 0.491191135734072,
+      "auc_facetrace": 0.660831024930748,
+      "auc_spliceloc": 0.7606336805555556,
+      "auc_syncnet_zero_shot": 0.4101939058171745,
+      "detected_as_FAKE": 0.2916666666666667,
+      "fake_called_REAL": 0.0,
+      "fake_abstained": 0.7083333333333334,
+      "real_called_FAKE": 0.16666666666666666,
+      "real_abstained": 0.6666666666666666
+    }
+  },
+  "by_kind": {
+    "full": {
+      "auc_nyaya": 0.7674322018678161,
+      "auc_syncformer": 0.5744944935909009,
+      "auc_syncnet_zero_shot": 0.6618523199133417,
+      "auc_facetrace": 0.8604441234879943
+    },
+    "partial": {
+      "auc_nyaya": 0.8528645833333333,
+      "auc_syncformer": 0.5745639887659929,
+      "auc_syncnet_zero_shot": 0.6118719877951527,
+      "auc_facetrace": 0.765403418744149
+    }
+  },
+  "latency_ms": {
+    "mean": 169.94661458333334,
+    "p95": 216.64999999999998
+  }
+}

@@ -25,8 +25,7 @@ Blueprint: SATYACHECK_BLUEPRINT.md · Env: `. .venv/bin/activate` · Secrets: `s
 - ✅ P3.1 dataset (on-the-fly splice→AAC→crop; exact labels) · ✅ P3.2 model (117M total, 3.2M heads, XLS-R 8 layers, BAM-style heads)
 - 🟡 P3.3 training v2 running: ml/runs/spliceloc_v2, W&B group M2-SpliceLoc, 9 epochs x 3000 (log: logs/spliceloc_v2.log)
 - ⬜ P3.4 eval: `python -m ml.eval.eval_spliceloc --ckpt ml/runs/spliceloc_v2/best.pt` (script written, untested)
-  ## P4 M1 SyncFormer ⬜
-## P5 M4 FaceTrace + M3 ForwardAge ⬜  ## P6 Nyaya ⬜  ## P7 Eval ⬜  ## P8 Server ⬜  ## P9 Frontend ⬜  ## P10 Ship ⬜
+  ## P7 Eval 🟡 (core done; baselines+plots+claims left)  ## P8 🟡 (P8.1 export, P8.2 ORT-swap left)  ## P9 ⬜  ## P10 ⬜
 
 ## P4-P6 (M1 SyncFormer, M4 FaceTrace, M3 ForwardAge, M5 Nyaya) — status
 - ✅ P4.0 real-speaker data: TalkVid-Bench (500) + 1,199 clips fetched via yt-dlp from TalkVid's metadata (900 speakers, 332 Hindi); 1,126 cached (819 train / 104 val / 107 cal / 96 test clips, speaker-disjoint). Ladder Gen1-5 + ROI/mel/kin per clip in data/cache_v.
@@ -40,6 +39,10 @@ Blueprint: SATYACHECK_BLUEPRINT.md · Env: `. .venv/bin/activate` · Secrets: `s
 - ✅ P6.3 ablations (refit without each branch, TEST AUC): full 0.845 | no sync 0.715 | no splice/synth 0.807 | no face 0.796 | sync only 0.772 -> every branch contributes
 - Diagnosis of weak spots: per-branch AUC on its own family (test, vs real) M1 0.96/0.96/0.90 (shift/swap/partial), M2 splice 0.85, M4 blend 0.94 BUT FaceTrace's score on REAL faces climbs 0.40 (Gen0) -> 0.88 (Gen5) = codec artefacts read as blends. Multiple-testing across 3 noisy branches keeps real-clip abstention high. Levers: codec-faithful FaceTrace retrain, M2 domain adaptation to in-the-wild speech
 - Lesson: torch.load(weights_only=True) rejected the first Nyaya checkpoint (NumPy scalars) — checkpoints now store plain Python types
-- 🟡 Held-out generator: 88 Wav2Lip dubs of TEST clips forwarded Gen0-5 (data/attacks/wav2lip); end-to-end eval ml/eval/eval_heldout.py (+ SyncNet zero-shot baseline) after Nyaya fit
+- ✅ Held-out generator (P7 core): 88 Wav2Lip dubs of TEST clips, Gen0-5, end-to-end on files; ml/reports/heldout_wav2lip.json. Nyaya AUC on unseen generator 0.78 (full dubs) / 0.85 (partial); fake_called_REAL 0-3.1% across gens (safe failure); abstains ~70% (conservative); SyncNet zero-shot baseline 0.41-0.66. Result: generalisation to unseen generators demonstrated but abstention-heavy — claim guard wording: "flags Wav2Lip fakes with <3% false-accept; abstains rather than guesses"
+- ✅ P8.3 FastAPI+SSE+SQLite per §6.2/6.3 (server/), upload hardening (stream cap 100 MB, libmagic denylist + ffprobe gate), janitor, problem+json everywhere; mock pipeline mode (SATYA_MOCK=1) so server runs with no GPU/weights — swap point is one function (server/runner.py:Pipeline)
+- ✅ P8.4 /v1/chains (ForwardChain gens + per-gen verdict events), /v1/redteam/words (Whisper), /v1/redteam/splice (P1.5 factory muxed over video, truth boundaries)
+- ✅ P8.5 dossier PDF (WeasyPrint) + 1080x1350 share card en/hi (Pillow+qrcode), stored as artifacts
+- 14 tests green (tests/test_api.py: contract-validated results, SSE, resync, chain, redteam, dossier, traversal/oversize/bad-upload rejection)
 - Known issues / next: SpliceLoc ONNX export fails on pad-with-shape op (ml/export/spliceloc_onnx.py; fix at P8.1); preprocess latency 4-7 s/10 s clip dominates (P8); real WhatsApp forwards (T-WA) still needed to validate the emulator + ForwardAge
 - Ops lessons: box has 15 GB RAM — cap concurrent workers (OOM killed runs twice); PyAV motion-vector export leaks ~35 MB/call (disabled, USE_MV=False); never `pkill -f` a pattern that appears in your own command line (use pid files + process groups)
