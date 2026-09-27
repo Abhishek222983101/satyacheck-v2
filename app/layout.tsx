@@ -1,33 +1,30 @@
 import type { Metadata } from "next";
-import { Archivo_Black, Space_Grotesk } from "next/font/google";
+import { Anek_Devanagari, Anek_Latin } from "next/font/google";
 import "./globals.css";
+import { LangProvider } from "../lib/i18n";
+import Nav from "../components/Nav";
 
-const display = Archivo_Black({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-display",
-});
-
-const body = Space_Grotesk({
-  weight: ["400", "500", "700"],
-  subsets: ["latin"],
-  variable: "--font-body",
-});
+const anekLatin = Anek_Latin({ subsets: ["latin"], variable: "--font-anek-latin", axes: ["wdth"] });
+const anekDeva = Anek_Devanagari({ subsets: ["devanagari"], variable: "--font-anek-deva", axes: ["wdth"] });
 
 export const metadata: Metadata = {
-  title: "SatyaCheck — Fake Face, Real Riot | CX0102",
+  title: "SatyaCheck — is this forwarded clip real?",
   description:
-    "Lightweight manipulated-media detector for short vernacular videos. Lip-sync mismatch + audio splicing + recompression forensics in under 10 seconds, on a mid-range laptop.",
+    "Forensic checks for forwarded videos: lip-sync, splice, face artefacts and forwarding age — with an honest 'not sure' instead of a bluff.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
-      <body>{children}</body>
+    <html lang="en" className={`${anekLatin.variable} ${anekDeva.variable}`}>
+      <body style={{ ["--font-anek" as string]: "var(--font-anek-latin), var(--font-anek-deva), system-ui, sans-serif" }}>
+        <LangProvider>
+          <Nav />
+          <main className="mx-auto w-full max-w-[1200px] px-5 pb-16">{children}</main>
+          <footer className="mx-auto max-w-[1200px] px-5 pb-8 t-small">
+            SatyaCheck v2 — verdicts are probabilistic evidence, not proof. Clips auto-delete after 24 h.
+          </footer>
+        </LangProvider>
+      </body>
     </html>
   );
 }
