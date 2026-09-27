@@ -171,7 +171,7 @@ function RecordButton({ onFile, label }: { onFile: (f: File) => void; label: str
       };
       mr.start(); setRec(true); setLeft(8);
       const iv = setInterval(() => setLeft((l) => {
-        if (l <= 1) { clearInterval(iv); mr.state !== "inactive" && mr.stop(); setRec(false); return 0; }
+        if (l <= 1) { clearInterval(iv); if (mr.state !== "inactive") mr.stop(); setRec(false); return 0; }
         return l - 1;
       }), 1000);
     } catch { alert("Camera/microphone permission is needed to record. You can also just drop a file."); }
