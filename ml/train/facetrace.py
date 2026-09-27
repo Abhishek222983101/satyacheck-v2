@@ -108,10 +108,12 @@ def main():
     ap.add_argument("--epochs", type=int, default=8); ap.add_argument("--epoch-len", type=int, default=2400); ap.add_argument("--bs", type=int, default=48)
     ap.add_argument("--workers", type=int, default=6); ap.add_argument("--lr", type=float, default=3e-4); ap.add_argument("--ema", type=float, default=0.99)
     ap.add_argument("--eval-n", type=int, default=600); ap.add_argument("--smoke", action="store_true"); ap.add_argument("--no-wandb", action="store_true")
+    ap.add_argument("--pixel", action="store_true",
+                    help="P7.2 baseline: Gen-0 only — train on clean pixels (fixed channel strength), no codec variety. Expected to collapse under re-encoding.")
     ap.add_argument("--out", default="ml/runs/facetrace")
     a = ap.parse_args(); dev = "cuda"; torch.manual_seed(0); np.random.seed(0)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    tr = FaceDataset(a.manifest, "train", 96 if a.smoke else a.epoch_len)
+    tr = FaceDataset(a.manifest, "train", 96 if a.smoke else a.epoch_len, strength=0.05 if a.pixel else None)
     trl = DataLoader(tr, batch_size=a.bs, num_workers=2 if a.smoke else a.workers, drop_last=True, pin_memory=True, persistent_workers=not a.smoke, prefetch_factor=4)
     model = build().to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=1e-4); total = a.epochs * len(trl)

@@ -1,0 +1,336 @@
+{
+  "generated_by": "python -m ml.eval.benchmark",
+  "git_sha": "54fe0539eb8c",
+  "models": {
+    "syncformer": "c3b9f94eb125245f",
+    "spliceloc": "2c648f87e62e37e2",
+    "facetrace": "f33f5d4601c72ffc",
+    "nyaya": "f45e4490c26b87cd",
+    "pixel_only": "dea27e911e5fc893"
+  },
+  "in_domain": {
+    "M1_syncformer": {
+      "auc_val": 0.887,
+      "note": "PROGRESS P4.5 measured (T-LS val)"
+    },
+    "M2_spliceloc": {
+      "test": {
+        "n": 1800,
+        "frame_eer": 0.06994483199770302,
+        "boundary_f1_80ms": 0.5732323232323232,
+        "boundary_f1_40ms": 0.5694444444444444,
+        "boundary_f1_80ms_spliced_only": 0.6240549828178693,
+        "boundary_prec_80ms": 0.7504132231404959,
+        "boundary_rec_80ms": 0.4637385086823289,
+        "auc_splice": 0.8868618110754082,
+        "auc_synth": 0.9985514380045631
+      },
+      "per_gen": {
+        "0": {
+          "n": 300,
+          "frame_eer": 0.07606880528896154,
+          "boundary_f1_80ms": 0.552901023890785,
+          "boundary_f1_40ms": 0.5460750853242321,
+          "boundary_f1_80ms_spliced_only": 0.6183206106870228,
+          "boundary_prec_80ms": 0.7105263157894737,
+          "boundary_rec_80ms": 0.45251396648044695,
+          "auc_splice": 0.8628887894383531,
+          "auc_synth": 0.9997750000000001
+        },
+        "1": {
+          "n": 300,
+          "frame_eer": 0.07575647093266574,
+          "boundary_f1_80ms": 0.5748031496062992,
+          "boundary_f1_40ms": 0.5748031496062992,
+          "boundary_f1_80ms_spliced_only": 0.6431718061674009,
+          "boundary_prec_80ms": 0.73,
+          "boundary_rec_80ms": 0.474025974025974,
+          "auc_splice": 0.8676988636363637,
+          "auc_synth": 0.998575
+        },
+        "2": {
+          "n": 300,
+          "frame_eer": 0.06352181606570362,
+          "boundary_f1_80ms": 0.5748987854251013,
+          "boundary_f1_40ms": 0.5748987854251013,
+          "boundary_f1_80ms_spliced_only": 0.6367713004484304,
+          "boundary_prec_80ms": 0.71,
+          "boundary_rec_80ms": 0.48299319727891155,
+          "auc_splice": 0.8935703703703703,
+          "auc_synth": 0.9988952399250685
+        },
+        "3": {
+          "n": 300,
+          "frame_eer": 0.06813051912514412,
+          "boundary_f1_80ms": 0.608,
+          "boundary_f1_40ms": 0.608,
+          "boundary_f1_80ms_spliced_only": 0.6386554621848739,
+          "boundary_prec_80ms": 0.8172043010752689,
+          "boundary_rec_80ms": 0.4840764331210191,
+          "auc_splice": 0.8934933272237814,
+          "auc_synth": 0.9976728064963358
+        },
+        "4": {
+          "n": 300,
+          "frame_eer": 0.0617365127780215,
+          "boundary_f1_80ms": 0.564885496183206,
+          "boundary_f1_40ms": 0.549618320610687,
+          "boundary_f1_80ms_spliced_only": 0.6040816326530611,
+          "boundary_prec_80ms": 0.7956989247311828,
+          "boundary_rec_80ms": 0.4378698224852071,
+          "auc_splice": 0.8952308472856418,
+          "auc_synth": 0.9993544722164842
+        },
+        "5": {
+          "n": 300,
+          "frame_eer": 0.06991125272584742,
+          "boundary_f1_80ms": 0.5683453237410072,
+          "boundary_f1_40ms": 0.5683453237410072,
+          "boundary_f1_80ms_spliced_only": 0.6076923076923076,
+          "boundary_prec_80ms": 0.7523809523809524,
+          "boundary_rec_80ms": 0.45664739884393063,
+          "auc_splice": 0.9037754939027638,
+          "auc_synth": 0.9985938319271653
+        }
+      }
+    },
+    "M4_facetrace": {
+      "note": "val AUC 0.956 clean/extreme 0.971/0.937 (PROGRESS P5.1)"
+    },
+    "M5_nyaya": {
+      "test": {
+        "n": 1728,
+        "auc": 0.8447913652584876,
+        "ece": 0.02686690641739578,
+        "nll": 0.44943562150001526,
+        "coverage": 0.9513888888888888,
+        "abstain_rate": 0.4930555555555556,
+        "accuracy_on_committed": 0.9041095890410958,
+        "fake_committed_real_rate": 0.011284722222222222,
+        "real_committed_fake_rate": 0.1232638888888889,
+        "by_bucket": {
+          "0": {
+            "n": 372,
+            "coverage": 0.9543010752688172,
+            "abstain": 0.5,
+            "auc": 0.873991935483871
+          },
+          "1": {
+            "n": 927,
+            "coverage": 0.9611650485436893,
+            "abstain": 0.5167206040992449,
+            "auc": 0.8475665315612531
+          },
+          "2": {
+            "n": 429,
+            "coverage": 0.9277389277389277,
+            "abstain": 0.4358974358974359,
+            "auc": 0.8136339185290234
+          }
+        },
+        "by_cond": {
+          "real": {
+            "n": 576,
+            "detect_rate": null,
+            "abstain": 0.6875,
+            "mean_p_fake": 0.4605560302734375
+          },
+          "face_blend": {
+            "n": 256,
+            "detect_rate": 0.30078125,
+            "abstain": 0.6640625,
+            "mean_p_fake": 0.6394305229187012
+          },
+          "sync_partial": {
+            "n": 211,
+            "detect_rate": 0.8293838862559242,
+            "abstain": 0.17061611374407584,
+            "mean_p_fake": 0.8835909366607666
+          },
+          "sync_shift": {
+            "n": 227,
+            "detect_rate": 0.8237885462555066,
+            "abstain": 0.17180616740088106,
+            "mean_p_fake": 0.884346604347229
+          },
+          "sync_swap": {
+            "n": 227,
+            "detect_rate": 0.748898678414097,
+            "abstain": 0.2511013215859031,
+            "mean_p_fake": 0.851463794708252
+          },
+          "splice_replace": {
+            "n": 231,
+            "detect_rate": 0.3203463203463203,
+            "abstain": 0.6666666666666666,
+            "mean_p_fake": 0.6754997968673706
+          }
+        },
+        "by_gen": {
+          "0": {
+            "auc": 0.8712565104166667
+          },
+          "1": {
+            "auc": 0.8720160590277778
+          },
+          "2": {
+            "auc": 0.8796657986111112
+          },
+          "3": {
+            "auc": 0.8440212673611112
+          },
+          "4": {
+            "auc": 0.8055013020833335
+          },
+          "5": {
+            "auc": 0.793240017361111
+          }
+        }
+      },
+      "ablations": {
+        "full": {
+          "auc": 0.8448,
+          "coverage": 0.9514,
+          "abstain": 0.4931,
+          "acc_committed": 0.9041
+        },
+        "drop_m1(sync)": {
+          "auc": 0.7148,
+          "coverage": 0.9306,
+          "abstain": 0.6215,
+          "acc_committed": 0.8165
+        },
+        "drop_m2(splice+synth)": {
+          "auc": 0.8066,
+          "coverage": 0.9653,
+          "abstain": 0.5897,
+          "acc_committed": 0.9154
+        },
+        "drop_m4(face)": {
+          "auc": 0.7962,
+          "coverage": 0.945,
+          "abstain": 0.5764,
+          "acc_committed": 0.8702
+        },
+        "only_m1": {
+          "auc": 0.7721,
+          "coverage": 0.9462,
+          "abstain": 0.6007,
+          "acc_committed": 0.8652
+        }
+      },
+      "baselines": {
+        "mean_of_branches_auc": 0.7196,
+        "m1_score_auc": 0.7722,
+        "m2_splice_auc": 0.671,
+        "m2_synth_auc": 0.4861,
+        "m4_score_auc": 0.5929
+      }
+    },
+    "M3_forwardage": {
+      "note": "EMULATED forwards (ForwardChain). Not a measurement of real WhatsApp files.",
+      "test_mae_by_lang": {
+        "Other": 0.7431035533262652,
+        "English": 0.8155874058633151,
+        "Chinese": 0.779451585439415,
+        "Spanish": 0.8951341712498816,
+        "Korean": 0.8013914850371484,
+        "Hindi": 0.8730596717452651
+      }
+    }
+  },
+  "unseen_generator": {
+    "wav2lip": {
+      "n_files": 768,
+      "n_fake": 384,
+      "n_real": 384,
+      "by_gen": {
+        "0": {
+          "n": 192,
+          "auc_nyaya": 0.9293619791666667,
+          "auc_syncformer": 0.5985243055555556,
+          "auc_facetrace": 0.9735243055555556,
+          "auc_spliceloc": 0.7337782118055556,
+          "auc_syncnet_zero_shot": 0.7752821180555556,
+          "detected_as_FAKE": 0.7916666666666666,
+          "fake_called_REAL": 0.0,
+          "fake_abstained": 0.20833333333333334,
+          "real_called_FAKE": 0.0625,
+          "real_abstained": 0.7395833333333334
+        },
+        "1": {
+          "n": 192,
+          "auc_nyaya": 0.8111979166666666,
+          "auc_syncformer": 0.6178385416666669,
+          "auc_facetrace": 0.8384331597222223,
+          "auc_spliceloc": 0.7618272569444445,
+          "auc_syncnet_zero_shot": 0.6968315972222221,
+          "detected_as_FAKE": 0.3958333333333333,
+          "fake_called_REAL": 0.041666666666666664,
+          "fake_abstained": 0.5625,
+          "real_called_FAKE": 0.0625,
+          "real_abstained": 0.6354166666666666
+        },
+        "3": {
+          "n": 192,
+          "auc_nyaya": 0.7773437499999999,
+          "auc_syncformer": 0.5915570175438596,
+          "auc_facetrace": 0.7301535087719299,
+          "auc_spliceloc": 0.7966037326388888,
+          "auc_syncnet_zero_shot": 0.5285087719298247,
+          "detected_as_FAKE": 0.3020833333333333,
+          "fake_called_REAL": 0.03125,
+          "fake_abstained": 0.6666666666666666,
+          "real_called_FAKE": 0.052083333333333336,
+          "real_abstained": 0.71875
+        },
+        "5": {
+          "n": 192,
+          "auc_nyaya": 0.6783854166666667,
+          "auc_syncformer": 0.491191135734072,
+          "auc_facetrace": 0.660831024930748,
+          "auc_spliceloc": 0.7606336805555556,
+          "auc_syncnet_zero_shot": 0.4101939058171745,
+          "detected_as_FAKE": 0.2916666666666667,
+          "fake_called_REAL": 0.0,
+          "fake_abstained": 0.7083333333333334,
+          "real_called_FAKE": 0.16666666666666666,
+          "real_abstained": 0.6666666666666666
+        }
+      },
+      "by_kind": {
+        "full": {
+          "auc_nyaya": 0.7674322018678161,
+          "auc_syncformer": 0.5744944935909009,
+          "auc_syncnet_zero_shot": 0.6618523199133417,
+          "auc_facetrace": 0.8604441234879943
+        },
+        "partial": {
+          "auc_nyaya": 0.8528645833333333,
+          "auc_syncformer": 0.5745639887659929,
+          "auc_syncnet_zero_shot": 0.6118719877951527,
+          "auc_facetrace": 0.765403418744149
+        }
+      },
+      "latency_ms": {
+        "mean": 169.94661458333334,
+        "p95": 216.64999999999998
+      }
+    }
+  },
+  "baselines": {
+    "pixel_only_gen0": {
+      "note": "P7.2 pixel-only baseline: EfficientNet-B0 trained on Gen-0 (clean) pixels only, self-blended labels, NO channel-degradation variety. Expected to collapse under re-encoding.",
+      "train": "ml/train/facetrace.py --pixel, 8 epochs x 1800, ImageNet init",
+      "epoch": 7,
+      "auc_clean": 0.8930537483735361,
+      "auc_mild": 0.8540909040358544,
+      "auc_heavy": 0.820460636795338,
+      "auc_extreme": 0.7652553965235378,
+      "auc_face": 0.9083281472261736,
+      "auc_lower": 0.9116120643669985,
+      "auc_lips": 0.77915518314367,
+      "auc_mean": 0.8332151714320666
+    }
+  }
+}
