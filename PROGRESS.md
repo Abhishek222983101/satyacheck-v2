@@ -25,7 +25,9 @@ Blueprint: SATYACHECK_BLUEPRINT.md · Env: `. .venv/bin/activate` · Secrets: `s
 - ✅ P3.1 dataset (on-the-fly splice→AAC→crop; exact labels) · ✅ P3.2 model (117M total, 3.2M heads, XLS-R 8 layers, BAM-style heads)
 - 🟡 P3.3 training v2 running: ml/runs/spliceloc_v2, W&B group M2-SpliceLoc, 9 epochs x 3000 (log: logs/spliceloc_v2.log)
 - ⬜ P3.4 eval: `python -m ml.eval.eval_spliceloc --ckpt ml/runs/spliceloc_v2/best.pt` (script written, untested)
-  ## P7 ✅ (P7.1 ONNX end-to-end re-run folded into P8.2 parity smoke; per-model evals + heldout + baselines + ablations + plots + claims done)  ## P8 ✅ 5/5  ## P9 ⬜  ## P10 ⬜
+  ## P7 ✅  ## P8 ✅ 5/5
+## P9 Frontend ✅ 9/9 — shell/tokens/Anek local fonts/en-hi i18n; Desk (drop, tapes, record, width-compressing headline, SSE rail); case board (ClipTable+MediaPipe overlay, seal, SyncScope/SpliceScope/AgeDial/FaceTraceStrip/DecisionTrace, 3D FaceMeshHeat lazy); Chain Theatre; Red team (words->splice->scan); Lab (all metrics from /v1/benchmarks); offline tier (v1 heuristics + FaceTrace WASM); screenshots + critique pass. Next16 rewrite /v1->:8000
+## P10 🟡 3/5 — ✅P10.1 e2e (tests/e2e.mjs 6 scenarios PASS) · ✅P10.2 CPU latency p95 5.48s<8s · ⬜P10.3 deploy (needs user) · ✅P10.4 README v2 · ✅P10.5 docs/REHEARSAL.md (human run-throughs pending)
 
 ## P4-P6 (M1 SyncFormer, M4 FaceTrace, M3 ForwardAge, M5 Nyaya) — status
 - ✅ P4.0 real-speaker data: TalkVid-Bench (500) + 1,199 clips fetched via yt-dlp from TalkVid's metadata (900 speakers, 332 Hindi); 1,126 cached (819 train / 104 val / 107 cal / 96 test clips, speaker-disjoint). Ladder Gen1-5 + ROI/mel/kin per clip in data/cache_v.
