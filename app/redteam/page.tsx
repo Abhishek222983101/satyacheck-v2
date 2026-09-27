@@ -21,6 +21,7 @@ export default function RedTeamPage() {
   const [picked, setPicked] = useState<number[]>([]);
   const [op, setOp] = useState<"delete" | "swap" | "duplicate">("delete");
   const [busy, setBusy] = useState(false);
+  const [loadingWords, setLoadingWords] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [attackUrl, setAttackUrl] = useState<string | null>(null);
   const [truth, setTruth] = useState<number[]>([]);
@@ -33,15 +34,17 @@ export default function RedTeamPage() {
   }, []);
 
   const loadWords = async () => {
-    setErr(null); setWords(null); setPicked([]);
+    setErr(null); setWords(null); setPicked([]); setLoadingWords(true);
     try {
       const j = await api<{ words?: Word[]; source?: "whisper" | "pauses" }>(`/v1/redteam/words/${mediaId.trim()}`);
       const ws = (j.words ?? []).filter((w) => w.w.trim());
       if (!ws.length) throw new Error("no speech found in this clip — try one where someone is clearly talking.");
       setWords(ws);
       setWordSource(j.source ?? null);
+      setLoadingWords(false);
     } catch (e) {
       setErr(e instanceof Error ? e.message : t("error_generic"));
+      setLoadingWords(false);
     }
   };
 
@@ -84,7 +87,9 @@ export default function RedTeamPage() {
             try { localStorage.setItem("satya:lastMediaId", e.target.value); } catch { /* private mode */ }
           }}
         />
-        <button className="btn" onClick={loadWords} disabled={mediaId.trim().length < 8}>Load words</button>
+        <button className="btn" onClick={loadWords} disabled={mediaId.trim().length < 8 || loadingWords}>
+          {loadingWords ? "listening… (up to ~1 min on first load)" : "Load words"}
+        </button>
         </div>
       </div>
       {err ? <p className="t-small mt-2" style={{ color: "var(--seal-fake)" }}>{err}</p> : null}

@@ -49,6 +49,9 @@ html {
 @media (prefers-color-scheme: dark) {
   html { background-image: radial-gradient(#f2efe622 1.2px, transparent 1.2px); }
 }
+
+/* topbar stays ink in both modes (v1 look); --topbar-* never follow the theme */
+:root { --topbar-bg: #141414; --topbar-ink: #ffffff; }
 ::selection { background: var(--signal-face); color: var(--ink); }
 
 .font-display { font-family: var(--font-display), "Arial Black", sans-serif; }

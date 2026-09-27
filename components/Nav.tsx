@@ -14,8 +14,8 @@ export default function Nav() {
   const path = usePathname();
   const { lang, setLang, t } = useLang();
   return (
-    <header className="sticky top-0 z-50 border-b-[3px] border-[color:var(--ink)] bg-[color:var(--ink)]">
-      <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center gap-4 px-5 py-3" style={{ color: "#fff" }}>
+    <header className="sticky top-0 z-50" style={{ background: "var(--topbar-bg)", borderBottom: "3px solid var(--ink)" }}>
+      <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center gap-4 px-5 py-3" style={{ color: "var(--topbar-ink)" }}>
         <Link
           href="/"
           className="font-display inline-block bg-[color:var(--seal-fake)] px-3 py-1 text-[18px] text-white shadow-[4px_4px_0_#000] outline outline-[3px] outline-white/90"

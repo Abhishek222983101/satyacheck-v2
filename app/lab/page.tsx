@@ -26,9 +26,13 @@ function Row({ k, v, note }: { k: string; v: unknown; note?: string }) {
 export default function LabPage() {
   const [bench, setBench] = useState<Bench | null>(null);
   const [err, setErr] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api<Bench>("/v1/benchmarks").then(setBench).catch(() => setErr(true));
+    api<Bench>("/v1/benchmarks")
+      .then(setBench)
+      .catch(() => setErr(true))
+      .finally(() => setLoading(false));
   }, []);
 
   const nyaya = (bench?.nyaya ?? {}) as { test?: Record<string, number>; temperature?: number; alpha?: number };
@@ -46,6 +50,7 @@ export default function LabPage() {
         verdicts come from. Nothing is typed in by hand; if a check has not run, the cell stays empty.
       </p>
       {err ? <p className="t-small mt-3" style={{ color: "var(--seal-fake)" }}>The report service isn&rsquo;t reachable — start the API server to see measured numbers.</p> : null}
+      {loading && !bench ? <p className="t-small mt-3">loading measured reports from the API…</p> : null}
 
       {bench ? (
         <div className="mt-6 grid gap-4 md:grid-cols-2">

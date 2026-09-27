@@ -53,6 +53,17 @@ async def validation_exc(request: Request, exc: RequestValidationError):
 async def startup():
     init_db()
 
+    def warm_whisper():
+        try:
+            from ml.redteam.words import _model
+            _model()  # 80 s cold load on CPU; do it now, not on the user's first click
+            print("[startup] whisper warmed")
+        except Exception as e:
+            print(f"[startup] whisper warmup skipped: {e.__class__.__name__}")
+
+    import threading
+    threading.Thread(target=warm_whisper, daemon=True).start()
+
     async def sweep():  # blueprint: janitor on start + hourly
         while True:
             await asyncio.sleep(3600)

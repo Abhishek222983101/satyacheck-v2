@@ -33,6 +33,9 @@ def _load_wav(path: str) -> tuple[np.ndarray, int]:
     return np.concatenate(chunks).astype(np.float32), 16000
 
 
+_WORDS_CACHE: dict[str, dict] = {}
+
+
 @router.get("/redteam/words/{media_id}")
 async def words(media_id: str):
     check_id(media_id)
@@ -40,10 +43,15 @@ async def words(media_id: str):
         m = s.get(Media, media_id)
         if not m:
             raise HTTPException(404, "no such media")
+    if media_id in _WORDS_CACHE:
+        return _WORDS_CACHE[media_id]
     from ml.redteam.words import pick_units
     wav, _ = _load_wav(m.path)
     out = await asyncio.get_running_loop().run_in_executor(None, pick_units, wav, None)
-    return out  # {"words": [{w,t0,t1,conf}], "fallback": bool}
+    if len(_WORDS_CACHE) > 64:
+        _WORDS_CACHE.pop(next(iter(_WORDS_CACHE)))
+    _WORDS_CACHE[media_id] = out
+    return out
 
 
 class SpliceReq(BaseModel):

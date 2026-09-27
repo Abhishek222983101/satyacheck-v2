@@ -178,3 +178,16 @@ async def list_analyses(limit: int = 20):
                         "label": a.label, "created_at": a.created_at.isoformat() if a.created_at else None,
                         "name": name})
     return {"analyses": out}
+
+
+@router.get("/analyses/{aid}/meta")
+async def analysis_meta(aid: str):
+    """Provenance for the case board: how this clip entered the system."""
+    check_id(aid)
+    with Session(engine) as s:
+        a = s.get(Analysis, aid)
+        if not a:
+            raise HTTPException(404, "no such analysis")
+        m = s.get(Media, a.media_id)
+        c = s.get(Case, m.case_id) if m else None
+        return {"source": c.source if c else "unknown", "created_at": a.created_at.isoformat() if a.created_at else None}
