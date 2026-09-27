@@ -36,6 +36,7 @@ function Mesh({ src, frames = [], setReady }: Props & { setReady: (b: boolean) =
   const pointsRef = useRef<THREE.Points>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lmRef = useRef<FaceLandmarker | null>(null);
+  const tsRef = useRef(0); // MediaPipe VIDEO mode needs strictly-increasing timestamps; currentTime goes backwards on seek/pause
   const ready = true;
 
   const geo = useMemo(() => {
@@ -73,7 +74,8 @@ function Mesh({ src, frames = [], setReady }: Props & { setReady: (b: boolean) =
     const iv = setInterval(() => {
       const v = videoRef.current, lm = lmRef.current;
       if (!v || !lm || v.readyState < 2 || v.paused) return;
-      const res = lm.detectForVideo(v, v.currentTime * 1000);
+      tsRef.current = Math.max(tsRef.current + 1, Math.floor(v.currentTime * 1000));
+      const res = lm.detectForVideo(v, tsRef.current);
       const lms = res.faceLandmarks?.[0];
       if (!lms) return;
       const pos = geo.getAttribute("position") as THREE.BufferAttribute;

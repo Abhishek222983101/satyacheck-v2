@@ -16,6 +16,7 @@ export default function ClipTable({ src, r, landed }: { src: string; r: Analysis
   useEffect(() => {
     let stopped = false;
     let raf = 0;
+    let lastTs = 0; // MediaPipe VIDEO mode needs strictly-increasing timestamps; currentTime goes backwards on seek/pause
     let landmarker: { detectForVideo: (v: HTMLVideoElement, t: number) => { faceLandmarks: { x: number; y: number }[][] }; close?: () => void } | null = null;
     (async () => {
       try {
@@ -33,8 +34,8 @@ export default function ClipTable({ src, r, landed }: { src: string; r: Analysis
           const v = videoRef.current, cv = canvasRef.current;
           if (!v || !cv || v.paused || v.ended || !landmarker) return;
           if (v.videoWidth === 0) return;
-          const res = landmarker.detectForVideo(v, v.currentTime * 1000);
-          const g = cv.getContext("2d");
+          lastTs = Math.max(lastTs + 1, Math.floor(v.currentTime * 1000));
+          const res = landmarker.detectForVideo(v, lastTs);          const g = cv.getContext("2d");
           cv.width = v.videoWidth; cv.height = v.videoHeight;
           if (!g) return;
           g.clearRect(0, 0, cv.width, cv.height);
