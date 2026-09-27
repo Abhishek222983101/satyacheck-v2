@@ -94,12 +94,16 @@ export default function Desk() {
     if (f) runFlow(f, "upload");
   }, [runFlow]);
 
-  // wdth 125 (Gen 0, wide) -> 75 (Gen 5, squeezed): compression made visible in the letters
-  const wdth = 125 - gen * 10;
+  // compression made visible in the letters: weight drops, edges blur (Gen 0 crisp -> Gen 5 mush)
+  const heroStyle = {
+    fontWeight: 700 - gen * 55,
+    filter: `blur(${gen * 0.22}px) contrast(${1 - gen * 0.05})`,
+    transition: "filter 240ms, font-weight 240ms",
+  };
 
   return (
     <div className="pt-6">
-      <h1 className="t-hero" style={{ fontVariationSettings: `"wdth" ${wdth}`, transition: "font-variation-settings 240ms" }}>
+      <h1 className="t-hero" style={heroStyle}>
         {t("desk_q")}
       </h1>
       <p className="t-body mt-2 max-w-[70ch]">{t("desk_sub")}</p>

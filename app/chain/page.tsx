@@ -19,7 +19,7 @@ export default function ChainPage() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [running, setRunning] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [wdth, setWdth] = useState(125);
+  const [gen, setGen] = useState(0);
   const [chainId, setChainId] = useState<string | null>(null);
 
   const startChain = async () => {
@@ -32,9 +32,9 @@ export default function ChainPage() {
       setChainId(j.chain_id);
       streamEvents(j.chain_id, (ev: SSEEvent) => {
         if (ev.event === "gen_ready") {
-          const gen = ev.data.gen;
-          setSlots((s) => [...s, { gen: gen as number, url: String(ev.data.media_url), params: ev.data.params }]);
-          setWdth(125 - gen * 10);
+          const g = ev.data.gen;
+          setSlots((s) => [...s, { gen: g as number, url: String(ev.data.media_url), params: ev.data.params }]);
+          setGen(g as number);
         } else if (ev.event === "branch" && (ev.data as { branch?: string }).branch === "verdict") {
           const d = ev.data as { gen: number; result: { label: VerdictLabel; p_fake: number } };
           setSlots((s) => s.map((x) => (x.gen === d.gen ? { ...x, label: d.result.label, p: d.result.p_fake } : x)));
@@ -63,7 +63,7 @@ export default function ChainPage() {
             return next.sort((a, b2) => a.gen - b2.gen);
           });
           const maxGen = Math.max(0, ...st.gens.map((g) => g.gen));
-          if (maxGen) setWdth(125 - maxGen * 10);
+          if (maxGen) setGen(maxGen);
           if (st.status === "done") { setRunning(false); clearInterval(poll); }
         } catch { /* SSE still covers the happy path */ }
       }, 5000);
@@ -75,7 +75,11 @@ export default function ChainPage() {
 
   return (
     <div className="pt-6">
-      <h1 className="t-hero" style={{ fontVariationSettings: `"wdth" ${wdth}`, transition: "font-variation-settings 400ms" }}>
+      <h1 className="t-hero" style={{
+        fontWeight: 700 - gen * 55,
+        filter: `blur(${gen * 0.22}px) contrast(${1 - gen * 0.05})`,
+        transition: "filter 400ms, font-weight 400ms",
+      }}>
         Forward it. Again. And again.
       </h1>
       <p className="t-body mt-2 max-w-[70ch]">

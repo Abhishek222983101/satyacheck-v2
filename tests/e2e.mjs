@@ -35,7 +35,7 @@ await page.setViewportSize({ width: 1440, height: 900 });
 ok(true, "desk renders + screenshots");
 
 // --- upload flow: sample tape -> case board
-await page.setInputFiles("input[type=file]", join(ROOT, "public", "samples", "ai-anchor.mp4"));
+await page.setInputFiles("input[type=file]", join(ROOT, "public", "samples", "tape_dub_caught.mp4"));
 await page.waitForURL("**/case/**", { timeout: 60000 });
 await page.waitForSelector("text=p(fake)", { timeout: 30000 });
 await page.screenshot({ path: join(OUT, "case_1440.png"), fullPage: true });

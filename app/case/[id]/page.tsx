@@ -20,10 +20,12 @@ export default function CasePage({ params }: { params: Promise<{ id: string }> }
   const [status, setStatus] = useState<string>("queued");
   const [dead, setDead] = useState(false);   // server unreachable -> offline tier
   const [base, setBase] = useState("");
+  const [source, setSource] = useState<string>("");
 
   useEffect(() => {
     let alive = true;
     apiBase().then((b) => alive && setBase(b));
+    api<{ source: string }>(`/v1/analyses/${id}/meta`).then((m) => alive && setSource(m.source)).catch(() => {});
     const poll = async () => {
       try {
         const j = await api<AnalysisResult & { status?: string }>(`/v1/analyses/${id}`);
@@ -60,6 +62,14 @@ export default function CasePage({ params }: { params: Promise<{ id: string }> }
         <h1 className="t-h2 truncate">{r.file.name}</h1>
         <span className="t-small t-num">{r.file.assessed_s.toFixed(1)} s · {r.file.width}×{r.file.height} · {r.mode === "mock" ? "demo run" : r.mode}</span>
       </div>
+
+      {source === "webcam" ? (
+        <div className="panel mt-3 px-4 py-2 t-small" style={{ borderColor: "var(--seal-real)", borderWidth: 3 }}>
+          <b>◉ Recorded in-app</b> — trusted capture: this clip came straight from your camera through this page,
+          so its <i>origin</i> is known-genuine. The forensic scopes below still report exactly what they see;
+          mic codecs (Opus) can read as artefacts, so treat low confidence here as "unknown", not "fake".
+        </div>
+      ) : null}
 
       <div className="mt-4 grid gap-4 md:grid-cols-12">
         {/* clip 7 cols, verdict 5 cols (§7.2 layout) */}

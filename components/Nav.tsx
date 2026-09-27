@@ -14,40 +14,54 @@ export default function Nav() {
   const path = usePathname();
   const { lang, setLang, t } = useLang();
   return (
-    <header className="mx-auto flex w-full max-w-[1200px] items-baseline gap-7 px-5 pt-6 pb-4">
-      <Link href="/" className="t-h3" style={{ fontWeight: 750 }}>
-        Satya<span style={{ color: "var(--signal-sync)" }}>Check</span>
-      </Link>
-      <nav className="flex gap-5 text-[15px]">
-        {TABS.map((tab) => {
-          const active = tab.href === "/" ? path === "/" || path.startsWith("/case") : path.startsWith(tab.href);
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className="border-b-2 pb-0.5"
-              style={{ borderColor: active ? "var(--signal-sync)" : "transparent", fontWeight: active ? 700 : 500 }}
+    <header className="sticky top-0 z-50 border-b-[3px] border-[color:var(--ink)] bg-[color:var(--ink)]">
+      <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center gap-4 px-5 py-3" style={{ color: "#fff" }}>
+        <Link
+          href="/"
+          className="font-display inline-block bg-[color:var(--seal-fake)] px-3 py-1 text-[18px] text-white shadow-[4px_4px_0_#000] outline outline-[3px] outline-white/90"
+          style={{ transform: "rotate(-2deg)" }}
+        >
+          SatyaCheck
+        </Link>
+        <nav className="flex gap-1">
+          {TABS.map((tab) => {
+            const active = tab.href === "/" ? path === "/" || path.startsWith("/case") : path.startsWith(tab.href);
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className="px-2.5 py-1 text-[14px] font-bold"
+                style={{
+                  background: active ? "var(--signal-face)" : "transparent",
+                  color: active ? "var(--ink)" : "#fff",
+                  border: "2px solid #fff",
+                  boxShadow: active ? "3px 3px 0 #000" : "none",
+                }}
+              >
+                {t(tab.key)}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="ml-auto flex items-center gap-1" role="group" aria-label="Language">
+          {(["en", "hi"] as const).map((l) => (
+            <button
+              key={l}
+              className="font-bold"
+              style={{
+                padding: "3px 10px",
+                fontSize: 13,
+                border: "2px solid #fff",
+                background: lang === l ? "var(--signal-face)" : "transparent",
+                color: lang === l ? "var(--ink)" : "#fff",
+                cursor: "pointer",
+              }}
+              onClick={() => setLang(l)}
             >
-              {t(tab.key)}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="ml-auto flex items-center gap-1 t-small" role="group" aria-label="Language">
-        {(["en", "hi"] as const).map((l) => (
-          <button
-            key={l}
-            className="btn"
-            style={{
-              padding: "2px 9px",
-              fontWeight: lang === l ? 750 : 400,
-              borderColor: lang === l ? "var(--graphite)" : "var(--rule)",
-            }}
-            onClick={() => setLang(l)}
-          >
-            {l === "en" ? "EN" : "हिं"}
-          </button>
-        ))}
+              {l === "en" ? "EN" : "हिं"}
+            </button>
+          ))}
+        </div>
       </div>
     </header>
   );
