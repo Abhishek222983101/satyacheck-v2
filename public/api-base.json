@@ -1,1 +1,1 @@
-{"base": "", "note": "same-origin via Next /v1 rewrite in dev; deploy writes the tunnel URL here"}
+{"base": "https://velocity-probe-apnic-karen.trycloudflare.com", "note": "cloudflared quick tunnel from the demo laptop; restart tunnel = update this file"}
