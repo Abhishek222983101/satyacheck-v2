@@ -27,3 +27,15 @@ Blueprint: SATYACHECK_BLUEPRINT.md · Env: `. .venv/bin/activate` · Secrets: `s
 - ⬜ P3.4 eval: `python -m ml.eval.eval_spliceloc --ckpt ml/runs/spliceloc_v2/best.pt` (script written, untested)
   ## P4 M1 SyncFormer ⬜
 ## P5 M4 FaceTrace + M3 ForwardAge ⬜  ## P6 Nyaya ⬜  ## P7 Eval ⬜  ## P8 Server ⬜  ## P9 Frontend ⬜  ## P10 Ship ⬜
+
+## P4-P6 (M1 SyncFormer, M4 FaceTrace, M3 ForwardAge, M5 Nyaya) — status
+- ✅ P4.0 real-speaker data: TalkVid-Bench (500) + 1,199 clips fetched via yt-dlp from TalkVid's metadata (900 speakers, 332 Hindi); 1,126 cached (819 train / 104 val / 107 cal / 96 test clips, speaker-disjoint). Ladder Gen1-5 + ROI/mel/kin per clip in data/cache_v.
+- ✅ P4.1 dataset (real-only + synthetic shifts/swaps/partials, teacher targets), P4.2 model (7.1M params: 3D-stem+ResNet visual, conv-attn audio, 3 cross layers, kinematics, **cost-volume offset head**), P4.3 trained (runs A-D; final = ml/runs/syncformer_best.pt, epoch 15)
+- ✅ P4.4 teacher: SyncNet (MIT) features on CLEAN clips for all 1,126 clips (median conf 6.7) -> compression-robust distillation
+- ✅ P4.5 M1 val: AUC 0.887 (Gen0 0.92 -> Gen5 0.87-0.88); offset from cost volume within ±1 frame on 63% (Gen0) / 42% (Gen5); partial-fake localisation AUC 0.80
+- ✅ P5.1 FaceTrace (EfficientNet-B0, self-blended pseudo-fakes, real-only): val AUC 0.956 (clean 0.971 / extreme compression 0.937 / lips-only 0.928)
+- ✅ P5.2 ForwardAge (LightGBM ordinal, 75 codec features): EMULATED forwards only — MAE 0.80 gen, within-1 77%, forwarded-vs-original AUC 1.0; top features are resolution/bitrate/profile (emulator parameters) => NOT a real-WhatsApp measurement
+- 🟡 P6.1 Nyaya samples: ml/train/run_nyaya_data.sh (val/cal/test, 6 conditions x Gen0-5) running; P6.2 fit+conformal: ml/train/nyaya.py (tested on synthetic data: 95.0% coverage at alpha 0.05)
+- 🟡 Held-out generator: 88 Wav2Lip dubs of TEST clips forwarded Gen0-5 (data/attacks/wav2lip); end-to-end eval ml/eval/eval_heldout.py (+ SyncNet zero-shot baseline) after Nyaya fit
+- Known issues / next: SpliceLoc ONNX export fails on pad-with-shape op (ml/export/spliceloc_onnx.py; fix at P8.1); preprocess latency 4-7 s/10 s clip dominates (P8); real WhatsApp forwards (T-WA) still needed to validate the emulator + ForwardAge
+- Ops lessons: box has 15 GB RAM — cap concurrent workers (OOM killed runs twice); PyAV motion-vector export leaks ~35 MB/call (disabled, USE_MV=False); never `pkill -f` a pattern that appears in your own command line (use pid files + process groups)

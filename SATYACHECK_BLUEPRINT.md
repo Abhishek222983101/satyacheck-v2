@@ -555,6 +555,19 @@ Weak numbers are presented as findings ("face artifacts fade after Gen-4 — whi
 | 9 | Network is the bottleneck (~1–3 MB/s), GPU is the training bottleneck (100% util, 3.4 GB of 8 GB, ~8.5 samples/s) | Measurements | Dataset slices are capped; epoch = 3,000 on-the-fly samples ≈ 6 min |
 | 10 | `hf` replaced `huggingface-cli`; `gdown` 6 dropped `--fuzzy`; ffmpeg ≥ 7 rejects `-r` with `-fps_mode vfr`; PyAV 18 returns `pict_type` as int | Runtime errors | Scripts fixed |
 
+### 4.13.1 P4-P6 findings (measured)
+
+| # | Finding | Evidence | Consequence |
+|---|---|---|---|
+| 11 | **SyncNet only works with its own face-crop convention** (aligned crop: conf 0.4; reference crop: 2-8) | P4 teacher test | `syncnet_crops` reproduces the reference tracker crop; used for teacher + baseline |
+| 12 | **Real clips carry ±2-3 frames of natural AV offset** (teacher: 59% within ±2) | 417 clips | Synthetic shifts start at |s|>=3 frames; "in sync" = P(|s|<=2) |
+| 13 | **Attention alone could not learn offsets from ~450 clips** (plateau at the label prior); a **cost volume + direct offset loss** unlocked it | runs A vs C vs D | M1 = cost-volume head (cos-sim of audio_t vs video_{t-s}, s=-15..15) supervised on every frame |
+| 14 | **Distillation from the CLEAN teacher into a student that sees DEGRADED input** trains (KD loss 1.0 -> 0.3) | run logs | Compression-robust distillation is part of the method |
+| 15 | Fine-tuning/decay overfits after ~epoch 15 on ~800 clips | val curves | EMA + best-checkpoint selection; more data is the next lever |
+| 16 | PyAV motion-vector export leaks ~35 MB/call | RSS probe | Disabled; features keep a fixed 75-d layout |
+| 17 | ForwardAge is confounded by emulator parameters (resolution/bitrate/profile dominate) | feature importance | Reported as 'emulated'; real forwards needed for a real claim |
+| 18 | Box RAM (15 GB) is the scaling limit | 2 OOM kills | Worker budgets in every script |
+
 ---
 
 # PART 5 — SYSTEM ARCHITECTURE
