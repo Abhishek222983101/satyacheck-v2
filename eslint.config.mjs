@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // non-frontend trees: python venv vendored js, model/data dirs
+    ".venv/**",
+    "data/**",
+    "ml/**",
+    "satya_core/**",
+    "var/**",
+    "public/models/**",
   ]),
 ]);
 
