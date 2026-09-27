@@ -248,13 +248,13 @@ def clip_score(sp, win=40):
 
 @torch.no_grad()
 def collect(model, ds, dev, bs=24, workers=4):
-    model.eval(); R = {"sp": [], "lbl": [], "kind": [], "gen": [], "pred": []}
+    model.eval(); R = {"sp": [], "lbl": [], "kind": [], "gen": [], "pred": [], "vol": []}
     for b in DataLoader(ds, batch_size=bs, num_workers=workers, shuffle=False):
         with torch.autocast("cuda", dtype=torch.bfloat16):
             o = model(b["roi"].to(dev), b["mel"].to(dev), b["kin"].to(dev))
-        R["sp"].append(sync_prob(o["delta"]).cpu().numpy()); R["pred"].append(o["delta"].float().argmax(-1).cpu().numpy())
+        R["sp"].append(sync_prob(o["delta"]).cpu().numpy()); R["pred"].append(o["delta"].float().argmax(-1).cpu().numpy()); R["vol"].append((o["vol_c"] + o["vol_k"]).float().mean(1).cpu().numpy())
         T = o["delta"].shape[1]; R["lbl"].append(b["label"][:, :T].numpy()); R["kind"] += b["kind"].tolist(); R["gen"] += b["gen"].tolist()
-    return {k: (np.concatenate(v) if k in ("sp", "lbl", "pred") else np.array(v)) for k, v in R.items()}
+    return {k: (np.concatenate(v) if k in ("sp", "lbl", "pred", "vol") else np.array(v)) for k, v in R.items()}
 
 
 def evaluate(model, mk_ds, dev, n=120):
@@ -269,6 +269,8 @@ def evaluate(model, mk_ds, dev, n=120):
             if kind == "shifted":
                 true = pos["lbl"][:, 0]; pred = np.array([np.bincount(r, minlength=NCLS).argmax() for r in pos["pred"]])
                 out[f"shift_mae_frames_g{g}"] = float(np.abs(true - pred).mean()); out[f"shift_acc_g{g}"] = float((true == pred).mean())
+                vp = pos["vol"][:, :31].argmax(1)          # SyncNet-style: peak of the mean cost volume = the audio offset
+                out[f"offset_mae_frames_g{g}"] = float(np.abs(true - vp).mean()); out[f"offset_within1_g{g}"] = float((np.abs(true - vp) <= 1).mean())
             if kind == "partial":     # frame-level localisation of the replaced window
                 fl = (pos["lbl"] != ZERO).ravel(); fs = (1 - pos["sp"]).ravel()
                 out[f"loc_auc_partial_g{g}"] = float(roc_auc_score(fl, fs)) if fl.any() and (~fl).any() else float("nan")
@@ -323,7 +325,7 @@ def main():
         if ema: ema.swap(model)
         m = evaluate(model, mk_val, dev)
         score = m["auc_mean"] * 0.5 + m["auc_mean_g5"] * 0.5
-        print(f"== epoch {ep} ({time.time()-t0:.0f}s) score {score:.4f} auc_mean {m['auc_mean']:.3f} g5 {m['auc_mean_g5']:.3f} | shifted {m['auc_shifted']:.3f} swapped {m['auc_swapped']:.3f} partial {m['auc_partial']:.3f} | shift_acc_g0 {m['shift_acc_g0']:.2f} mae {m['shift_mae_frames_g0']:.1f}fr", flush=True)
+        print(f"== epoch {ep} ({time.time()-t0:.0f}s) score {score:.4f} auc_mean {m['auc_mean']:.3f} g5 {m['auc_mean_g5']:.3f} | shifted {m['auc_shifted']:.3f} swapped {m['auc_swapped']:.3f} partial {m['auc_partial']:.3f} | offset(vol) within±1fr g0 {m['offset_within1_g0']:.2f} mae {m['offset_mae_frames_g0']:.1f}fr", flush=True)
         if run: run.log({**{f"val/{k}": v for k, v in m.items()}, "val/score": score}, step=step)
         if score > best:
             best = score; torch.save({"model": model.state_dict(), "metrics": m, "epoch": ep, "args": vars(a)}, out / "best.pt"); print("   saved best", flush=True)

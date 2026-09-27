@@ -21,7 +21,7 @@ import torch.nn.functional as F
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CKPT = {
-    "m1": ROOT / "ml/runs/syncformer/best.pt",
+    "m1": ROOT / "ml/runs/syncformer_best.pt",
     "m2": ROOT / "ml/runs/spliceloc_v4/best.pt",
     "m4": ROOT / "ml/runs/facetrace_v2/best.pt",
     "m3": ROOT / "models",
@@ -178,3 +178,18 @@ def analyze_arrays(models: Models, pre, codec_vec, codec_names, wav=None, mel=No
     m4 = timed("face", lambda: run_m4(models, faces) if has_face else {"status": "abstained", "reason": "no_face"})
     m3 = timed("age", lambda: run_m3(models, codec_vec, codec_names))
     return BranchOut(m1, m2, m4, m3, tm, {k: m.get(k) for k in ("face_presence", "speech_ratio", "has_audio", "assessed_s", "no_face", "no_speech")})
+
+
+def analyze_path(models: Models, path: str, fuser=None, on_stage=None) -> dict:
+    """The full runtime on one video file: preprocess -> codec features -> four branches -> (Nyaya verdict).
+    Returns branch outputs + timings (+ verdict if a Fuser is given). This is what the server and the held-out evals call."""
+    from satya_core.features_codec import extract
+    from satya_core.preprocess import preprocess
+    t0 = time.time(); tm = {}
+    pre = preprocess(path, on_stage=on_stage); tm.update({f"pre_{k}": v for k, v in pre.meta["timings_ms"].items()})
+    t = time.time(); vec, names = extract(path); tm["codec"] = round((time.time() - t) * 1000)
+    b = analyze_arrays(models, pre, vec, names)
+    tm.update(b.timings_ms); out = {"branches": b, "meta": pre.meta, "timings_ms": tm}
+    if fuser is not None:
+        t = time.time(); out["verdict"] = fuser(b, pre.meta); tm["fusion"] = round((time.time() - t) * 1000)
+    tm["total"] = round((time.time() - t0) * 1000); return out

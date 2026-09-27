@@ -16,6 +16,9 @@ import numpy as np
 from scipy.signal import welch
 
 _PT = {1: "I", 2: "P", 3: "B"}   # AVPictureType (PyAV >= 18 exposes it as int)
+# PyAV motion-vector export leaks ~35 MB per call (measured) — fatal in a long-lived server — and slows decoding. The 11 MV features
+# stay in the schema (zeros) so trained models keep a fixed input layout. Re-enable only inside a short-lived subprocess.
+USE_MV = False
 BENFORD = np.log10(1 + 1 / np.arange(1, 10))
 
 
@@ -109,7 +112,8 @@ def extract(path: str, max_s: float = 10.0):
     types, sizes, mv_mag, gray_i, ts = [], [], [], [], []
     with av.open(path) as c:
         vs = c.streams.video[0]; vs.thread_type = "AUTO"; vs.codec_context.thread_count = 2
-        vs.codec_context.options = {"flags2": "+export_mvs"}
+        if USE_MV:
+            vs.codec_context.options = {"flags2": "+export_mvs"}
         for pkt in c.demux(vs):
             if pkt.dts is None:
                 continue
@@ -118,7 +122,7 @@ def extract(path: str, max_s: float = 10.0):
                 if t > max_s:
                     break
                 ts.append(t); types.append(_PT.get(int(f.pict_type), "?") if f.pict_type is not None else "?"); sizes.append(pkt.size)
-                sd = f.side_data.get("MOTION_VECTORS") if hasattr(f.side_data, "get") else None
+                sd = f.side_data.get("MOTION_VECTORS") if (USE_MV and hasattr(f.side_data, "get")) else None
                 if sd is not None:
                     m = sd.to_ndarray(); mv_mag.append(np.hypot(m["motion_x"], m["motion_y"]) / max(m["motion_scale"].max(), 1))
                 if types[-1] == "I" and len(gray_i) < 4:

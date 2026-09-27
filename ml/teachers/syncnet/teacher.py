@@ -67,10 +67,12 @@ def syncnet_crops(frames_rgb: np.ndarray, pts: np.ndarray, cs: float = 0.4) -> n
     k = 9 if len(x0) >= 9 else 1
     cx, cy, bs = medfilt((x0 + x1) / 2, k), medfilt((y0 + y1) / 2, k), medfilt(np.maximum(y1 - y0, x1 - x0) / 2, k)
     out = np.zeros((len(frames_rgb), 224, 224, 3), np.uint8)
+    H, W = frames_rgb.shape[1:3]
     for t, f in enumerate(frames_rgb):
-        b = max(float(bs[t]), 8.0); bsi = int(b * (1 + 2 * cs))
-        pad = np.pad(f, ((bsi, bsi), (bsi, bsi), (0, 0)), "constant", constant_values=110)
-        my, mx = cy[t] + bsi, cx[t] + bsi
-        face = pad[int(my - b): int(my + b * (1 + 2 * cs)), int(mx - b * (1 + cs)): int(mx + b * (1 + cs))]
-        out[t] = cv2.resize(face, (224, 224)) if face.size else out[t]
+        b = max(float(bs[t]), 8.0)
+        # reference crop = window on a frame padded with grey(110); crop first, pad only the window (identical result, ~10x cheaper)
+        y0, y1 = int(cy[t] - b), int(cy[t] + b * (1 + 2 * cs)); x0, x1 = int(cx[t] - b * (1 + cs)), int(cx[t] + b * (1 + cs))
+        sub = f[max(0, y0):min(H, y1), max(0, x0):min(W, x1)]
+        face = np.pad(sub, ((max(0, -y0), max(0, y1 - H)), (max(0, -x0), max(0, x1 - W)), (0, 0)), "constant", constant_values=110)
+        out[t] = cv2.resize(face, (224, 224)) if face.size and face.shape[0] > 1 and face.shape[1] > 1 else out[t]
     return out[..., ::-1].copy()          # RGB -> BGR

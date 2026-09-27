@@ -42,7 +42,16 @@ def gen_faces(path: str, lm: np.ndarray, n: int = 8):
     return np.stack(faces), np.stack(lmk).astype(np.float32)
 
 
+_WAV, _FACES = {}, {}
+
+
 def source_wav(path: str) -> np.ndarray:
+    if path in _WAV: return _WAV[path]
+    if len(_WAV) > 60: _WAV.pop(next(iter(_WAV)))
+    _WAV[path] = _source_wav(path); return _WAV[path]
+
+
+def _source_wav(path: str) -> np.ndarray:
     from satya_core.preprocess import decode
     import av
     xs = []
@@ -98,7 +107,11 @@ def make_sample(models, row, g, cond, rng, tab, other_wavs):
     mel = log_mel(x)
     # ---- faces (real gen-g frames), same light degradation for all
     src = row["path"] if g == 0 else str(GENS / cid / f"gen_{g}.mp4")
-    faces, lmk = gen_faces(src, np.load(c / "lm.npy"))
+    key = (cid, g)
+    if key not in _FACES:
+        if len(_FACES) > 12: _FACES.pop(next(iter(_FACES)))
+        _FACES[key] = gen_faces(src, np.load(c / "lm.npy"))
+    faces, lmk = _FACES[key][0].copy(), _FACES[key][1]
     st = 0.05 + 0.05 * g
     if cond == "face_blend":
         region = str(rng.choice(["lips", "lower", "face"], p=[0.5, 0.3, 0.2]))

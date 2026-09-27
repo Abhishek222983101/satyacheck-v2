@@ -48,12 +48,15 @@ def build(workers: int = 4):
     have = set(zip(done.clip_id, done.gen)); jobs = [j for j in jobs if (j[0], j[1]) not in have]
     print(f"{len(jobs)} feature extractions to do ({len(have)} cached)", flush=True)
     rows = []
-    with ProcessPoolExecutor(workers) as ex:
+    import multiprocessing as mp
+    TABLE.parent.mkdir(exist_ok=True)
+    def flush():
+        pd.concat([done, pd.DataFrame(rows)], ignore_index=True).to_parquet(TABLE, index=False)   # checkpoint: a crash never loses the table
+    with ProcessPoolExecutor(workers, mp_context=mp.get_context("spawn")) as ex:      # leak fixed (2 MB/call): no recycling (max_tasks_per_child deadlocked)
         for i, r in enumerate(ex.map(_one, jobs, chunksize=8), 1):
             if "error" not in r: rows.append(r)
-            if i % 200 == 0: print(i, "/", len(jobs), flush=True)
-    out = pd.concat([done, pd.DataFrame(rows)], ignore_index=True) if rows else done
-    TABLE.parent.mkdir(exist_ok=True); out.to_parquet(TABLE, index=False); print("table:", len(out), "rows")
+            if i % 300 == 0: flush(); print(i, "/", len(jobs), flush=True)
+    flush(); print("table:", len(done) + len(rows), "rows")
 
 
 def distribution(P):
