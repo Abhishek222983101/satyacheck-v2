@@ -55,16 +55,22 @@ class Pipeline:
 
     def __init__(self) -> None:
         self.mock = os.environ.get("SATYA_MOCK") == "1"
+        self.runtime = os.environ.get("SATYA_RUNTIME", "torch")  # torch | ort
         self._impl = None
 
     def _load(self):
         if self._impl is not None or self.mock:
             return self._impl
         try:
-            from satya_core.pipeline import Models
-            from satya_core.verdict import Fuser
-            self._impl = {"models": Models(device="cuda" if os.environ.get("SATYA_DEVICE", "cuda") == "cuda" else "cpu"),
-                          "fuser": Fuser("models/nyaya.pt")}
+            if self.runtime == "ort":
+                from satya_core.onnx_models import OnnxModels
+                from satya_core.verdict import Fuser
+                self._impl = {"models": OnnxModels(), "fuser": Fuser("models/nyaya.pt")}
+            else:
+                from satya_core.pipeline import Models
+                from satya_core.verdict import Fuser
+                dev = os.environ.get("SATYA_DEVICE", "cuda")
+                self._impl = {"models": Models(device=dev), "fuser": Fuser("models/nyaya.pt")}
         except Exception as e:  # weights missing, no GPU, cold cache: degrade, never crash the API
             print(f"[runner] real pipeline unavailable ({e.__class__.__name__}: {e}); mock mode")
             self.mock = True

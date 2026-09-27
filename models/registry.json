@@ -54,9 +54,9 @@
     "spliceloc": {
       "version": "v4-epoch4",
       "onnx_path": "models/spliceloc.onnx",
-      "sha256": "a71c2af945fdce65",
+      "sha256": "ba33ae83ef2d241a",
       "int8_path": "models/spliceloc.int8.onnx",
-      "sha256_int8": "591c4e4ecd6d7839",
+      "sha256_int8": "27cc5e03ce62c681",
       "input_spec": {
         "wav": [
           "B",
