@@ -13,7 +13,7 @@ BUCKET = {0: "gen_0_1", 1: "gen_2_3", 2: "gen_4_5"}
 class Fuser:
     def __init__(self, path="models/nyaya.pt"):
         ck = torch.load(path, map_location="cpu", weights_only=True)
-        self.net = Nyaya(); self.net.load_state_dict(ck["model"]); self.net.eval()
+        self.net = Nyaya(ck.get("mode", "mean")); self.net.load_state_dict(ck["model"]); self.net.eval()
         self.T, self.q, self.alpha = float(ck["T"]), {int(k): v for k, v in ck["qhat"].items()}, float(ck["alpha"])
 
     def __call__(self, b, meta: dict) -> dict:

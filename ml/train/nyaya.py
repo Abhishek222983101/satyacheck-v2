@@ -53,9 +53,14 @@ def tensors(df):
 
 
 class Nyaya(nn.Module):
-    def __init__(self):
+    def __init__(self, mode: str = "lse"):
         super().__init__()
+        self.mode = mode           # 'mean' = gated average of branch logits; 'lse' = gated log-sum-exp (OR-like: one strong branch is enough)
         self.w = nn.Parameter(torch.ones(4)); self.b = nn.Parameter(torch.zeros(4))
+        # generation-aware calibration: what a branch score MEANS depends on how degraded the clip is (measured: FaceTrace's mean score
+        # on REAL faces climbs 0.40 -> 0.88 from Gen 0 to Gen 5). Scale/offset per branch = f(context); zero-init = identity.
+        self.aff = nn.Sequential(nn.Linear(3, 16), nn.GELU(), nn.Linear(16, 8))
+        nn.init.zeros_(self.aff[-1].weight); nn.init.zeros_(self.aff[-1].bias)
         self.gate = nn.Sequential(nn.Linear(3, 16), nn.GELU(), nn.Linear(16, 4))
         self.res = nn.Sequential(nn.Linear(7, 16), nn.GELU(), nn.Linear(16, 1))
         self.bias = nn.Parameter(torch.zeros(1))
@@ -64,16 +69,18 @@ class Nyaya(nn.Module):
     def forward(self, S, M, C):
         g = self.gate(C).masked_fill(M < 0.5, -1e4)
         g = torch.softmax(g, -1) * (M.sum(-1, keepdim=True) > 0)                     # nothing available -> zero evidence
-        z = (g * (self.w * S + self.b)).sum(-1)
+        d = self.aff(C); w = self.w * (1 + torch.tanh(d[:, :4])); b = self.b + 2.0 * torch.tanh(d[:, 4:])
+        a = w * S + b
+        z = (g * a).sum(-1) if self.mode == "mean" else torch.logsumexp(torch.log(g + 1e-8) + a, dim=-1)
         return z + self.res(torch.cat([C, M], -1)).squeeze(-1) * 0.5 + self.bias, g
 
 
-def fit(dfv, epochs=600, seed=0, p_drop=0.25):
+def fit(dfv, epochs=600, seed=0, p_drop=0.25, mode="lse"):
     torch.manual_seed(seed); np.random.seed(seed)
     spk = dfv.speaker.astype(str).values; u = np.unique(spk); rng = np.random.default_rng(seed); rng.shuffle(u)
     hold = np.isin(spk, u[: max(1, len(u) // 5)])                                   # speaker-disjoint early-stopping split
     S, M, C, y = tensors(dfv); Str, Mtr, Ctr, ytr = S[~hold], M[~hold], C[~hold], y[~hold]; Sh, Mh, Ch, yh = S[hold], M[hold], C[hold], y[hold]
-    net = Nyaya(); opt = torch.optim.AdamW(net.parameters(), lr=3e-2, weight_decay=1e-3); best, best_sd, bad = 1e9, None, 0
+    net = Nyaya(mode); opt = torch.optim.AdamW(net.parameters(), lr=3e-2, weight_decay=1e-3); best, best_sd, bad = 1e9, None, 0
     for ep in range(epochs):
         net.train()
         keep = (torch.rand_like(Mtr) > p_drop).float() * Mtr                          # random branch dropout (mute / faceless clips)
@@ -88,7 +95,7 @@ def fit(dfv, epochs=600, seed=0, p_drop=0.25):
             if vl < best - 1e-4: best, best_sd, bad = vl, {k: v.clone() for k, v in net.state_dict().items()}, 0
             else: bad += 1
             if bad >= 12: break
-    net.load_state_dict(best_sd); net.eval(); return net
+    net.load_state_dict(best_sd); net.eval(); net.val_nll = best; return net
 
 
 def apply(net, df, T=1.0, mask_override=None):
@@ -161,17 +168,37 @@ def evaluate(net, T, q, alpha, dft, name="test"):
     return R, p, v
 
 
+def drop_branches(df, names):
+    df = df.copy()
+    for n in names:
+        for k, okc in OKS.items():
+            if k.startswith(n): df[okc] = 0
+    return df
+
+
+def ablation(dfv, dfc, dft, drop, alpha=0.05, mode="mean"):
+    v, c, t = (drop_branches(d, drop) for d in (dfv, dfc, dft))
+    net = fit(v, mode=mode); T = fit_temperature(net, c); pc, _, yc = apply(net, c, T); q = conformal(pc, yc, c.gen_hat.values, alpha)
+    R, _, _ = evaluate(net, T, q, alpha, t)
+    return {"auc": R["auc"], "coverage": R["coverage"], "abstain": R["abstain_rate"], "acc_committed": R["accuracy_on_committed"], "auc_by_gen": {k: v["auc"] for k, v in R["by_gen"].items()}}
+
+
 def main():
     dfv, dfc, dft = load("val"), load("cal"), load("test"); alpha = 0.05
     print(f"val {len(dfv)} cal {len(dfc)} test {len(dft)} samples")
-    net = fit(dfv); T = fit_temperature(net, dfc)
+    cands = {m: fit(dfv, mode=m) for m in ("mean", "lse")}
+    print("validation NLL by fusion rule:", {m: round(n.val_nll, 4) for m, n in cands.items()})
+    mode = min(cands, key=lambda m: cands[m].val_nll); net = cands[mode]; print("chosen by validation:", mode)
+    T = fit_temperature(net, dfc)
     pc, _, yc = apply(net, dfc, T); q = conformal(pc, yc, dfc.gen_hat.values, alpha)
     print("temperature", round(T, 3), "| q̂ per bucket", {k: (round(v, 3) if v else None) for k, v in q.items()})
-    R = {"alpha": alpha, "temperature": T, "qhat": q, "n": {"val": len(dfv), "cal": len(dfc), "test": len(dft)}}
+    R = {"fusion_rule": mode, "val_nll": {m: n.val_nll for m, n in cands.items()}, "alpha": alpha, "temperature": T, "qhat": q, "n": {"val": len(dfv), "cal": len(dfc), "test": len(dft)}}
     R["test"], p, v = evaluate(net, T, q, alpha, dft)
     print("TEST", {k: (round(x, 4) if isinstance(x, float) else x) for k, x in R["test"].items() if k not in ("by_bucket", "by_cond", "by_gen")})
     print("by bucket", R["test"]["by_bucket"]); print("by cond", {k: {a: (round(b, 2) if isinstance(b, float) else b) for a, b in d.items()} for k, d in R["test"]["by_cond"].items()})
-    # ablations: mean of branch logits / best single branch / no gate (uniform) — all evaluated on the same test set
+    R["ablations"] = {"full": ablation(dfv, dfc, dft, [], mode=mode), "drop_m1(sync)": ablation(dfv, dfc, dft, ["m1"], mode=mode), "drop_m2(splice+synth)": ablation(dfv, dfc, dft, ["m2"], mode=mode), "drop_m4(face)": ablation(dfv, dfc, dft, ["m4"], mode=mode), "only_m1": ablation(dfv, dfc, dft, ["m2", "m4"], mode=mode)}
+    print("ABLATIONS (test):", {k: (round(v["auc"], 3), round(v["abstain"], 2), round(v["coverage"], 3)) for k, v in R["ablations"].items()}, "(auc, abstain, coverage)")
+    # baselines: mean of branch logits / best single branch / no gate (uniform) — all evaluated on the same test set
     S, M, C, y = tensors(dft); yv = y.numpy()
     mean_score = (S * M).sum(1) / M.sum(1).clamp(min=1)
     R["baselines"] = {"mean_of_branches_auc": float(roc_auc_score(yv, mean_score.numpy())),
@@ -186,7 +213,7 @@ def main():
         R["missing_branch"][name] = {"auc_with_evidence": float(roc_auc_score(ym[has], pm[has])) if has.any() and len(set(ym[has])) > 1 else None, "n": int(has.sum())}
     print("missing branch", R["missing_branch"])
     Path("models").mkdir(exist_ok=True); Path("ml/reports").mkdir(parents=True, exist_ok=True)
-    torch.save({"model": net.state_dict(), "T": T, "qhat": q, "alpha": alpha, "branches": BR}, "models/nyaya.pt")
+    torch.save({"model": net.state_dict(), "mode": str(mode), "T": float(T), "qhat": {int(k): (None if v is None else float(v)) for k, v in q.items()}, "alpha": float(alpha), "branches": list(BR)}, "models/nyaya.pt")   # plain Python types only: loads with weights_only=True
     json.dump(R, open("ml/reports/nyaya.json", "w"), indent=2, default=float)
     import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
     fig, ax = plt.subplots(1, 3, figsize=(13, 3.8)); yt = dft.label.values
