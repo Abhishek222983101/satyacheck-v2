@@ -12,7 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 from sqlmodel import Session
 
 from server import runner
-from server.db import Analysis, Artifact, Chain, Media, engine, j
+from server.db import Analysis, Artifact, Chain, ChainGen, Media, engine, j
 from server.util import OUT, check_id
 
 router = APIRouter(prefix="/v1")
@@ -40,6 +40,8 @@ def _run_chain(chain_id: str, case_id: str, src: Path, gens: int, loop: asyncio.
                             has_audio=rec["probe"]["audio"] is not None, emulator_params=j(rec["params"])))
                 s.flush()
                 s.add(Analysis(id=analysis_id, media_id=media_id, status="queued", model_versions=j(runner.MODELS)))
+                s.add(ChainGen(id=str(uuid.uuid4()), chain_id=chain_id, gen=rec["gen"],
+                               media_id=media_id, analysis_id=analysis_id))
                 s.add(Artifact(id=str(uuid.uuid4()), analysis_id=analysis_id, name=f"gen_{rec['gen']}.mp4",
                                path=rec["path"], mime="video/mp4"))
                 s.commit()
@@ -58,6 +60,32 @@ def _run_chain(chain_id: str, case_id: str, src: Path, gens: int, loop: asyncio.
             if c:
                 c.status = "done"
                 s.add(c); s.commit()
+
+
+@router.get("/chains/{cid}")
+async def chain_status(cid: str):
+    """Reconciler for the Chain page: full gen state in one poll, so the UI converges
+    even if the SSE stream drops (refresh mid-run also recovers)."""
+    check_id(cid)
+    with Session(engine) as s:
+        c = s.get(Chain, cid)
+        if not c:
+            from server.util import problem
+            return problem(404, "Not found", "No such chain.")
+        from sqlmodel import select
+        gens = s.exec(select(ChainGen).where(ChainGen.chain_id == cid).order_by(ChainGen.gen)).all()
+        out = []
+        for g in gens:
+            a = s.get(Analysis, g.analysis_id)
+            label, p = None, None
+            if a and a.result_json:
+                import json as _j
+                v = _j.loads(a.result_json)["verdict"]
+                label, p = v["label"], v["p_fake"]
+            out.append({"gen": g.gen, "media_id": g.media_id, "analysis_id": g.analysis_id,
+                        "media_url": f"/v1/analyses/{g.analysis_id}/artifacts/gen_{g.gen}.mp4",
+                        "status": a.status if a else "queued", "label": label, "p_fake": p})
+        return {"chain_id": cid, "status": c.status, "gens": out}
 
 
 @router.post("/chains", status_code=202)

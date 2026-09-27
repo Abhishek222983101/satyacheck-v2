@@ -76,6 +76,14 @@ class Chain(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_now)
 
 
+class ChainGen(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    chain_id: str = Field(foreign_key="chain.id", index=True)
+    gen: int
+    media_id: str = Field(foreign_key="media.id")
+    analysis_id: str = Field(foreign_key="analysis.id")
+
+
 class Attack(SQLModel, table=True):
     id: str = Field(primary_key=True)
     case_id: str = Field(foreign_key="case.id")

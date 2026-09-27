@@ -20,6 +20,7 @@ export default function ChainPage() {
   const [running, setRunning] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [wdth, setWdth] = useState(125);
+  const [chainId, setChainId] = useState<string | null>(null);
 
   const startChain = async () => {
     setErr(null); setSlots([]); setRunning(true);
@@ -28,6 +29,7 @@ export default function ChainPage() {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ media_id: mediaId.trim(), gens: 5 }),
       });
+      setChainId(j.chain_id);
       streamEvents(j.chain_id, (ev: SSEEvent) => {
         if (ev.event === "gen_ready") {
           const gen = ev.data.gen;
@@ -42,6 +44,30 @@ export default function ChainPage() {
           setRunning(false);
         }
       });
+      // Reconciler: the server holds full gen state, so polling converges even if SSE drops
+      // (or the tab refreshes mid-run). This is the source of truth; SSE is just the live tick.
+      const poll = setInterval(async () => {
+        try {
+          const st = await api<{ status: string; gens: { gen: number; media_url: string; label: VerdictLabel | null; p: number | null; p_fake: number | null }[] }>(`/v1/chains/${j.chain_id}`);
+          setSlots((prev) => {
+            const next = [...prev];
+            for (const g of st.gens) {
+              const i = next.findIndex((x) => x.gen === g.gen);
+              const slot: Slot = {
+                gen: g.gen, url: g.media_url,
+                label: g.label ?? undefined, p: g.p_fake ?? undefined,
+              };
+              if (i >= 0) next[i] = { ...next[i], ...slot };
+              else next.push(slot);
+            }
+            return next.sort((a, b2) => a.gen - b2.gen);
+          });
+          const maxGen = Math.max(0, ...st.gens.map((g) => g.gen));
+          if (maxGen) setWdth(125 - maxGen * 10);
+          if (st.status === "done") { setRunning(false); clearInterval(poll); }
+        } catch { /* SSE still covers the happy path */ }
+      }, 5000);
+      setTimeout(() => clearInterval(poll), 15 * 60 * 1000);
     } catch (e) {
       setErr(e instanceof Error ? e.message : t("error_generic")); setRunning(false);
     }
