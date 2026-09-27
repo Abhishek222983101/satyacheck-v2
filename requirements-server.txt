@@ -1,0 +1,27 @@
+# SatyaCheck v2 inference-server requirements (CPU-only, no training deps).
+# Pinned to the dev lockfile versions where possible.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.11.0
+torchaudio==2.11.0
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+sse-starlette==3.4.11
+sqlmodel==0.0.47
+pydantic==2.13.5
+python-magic==0.4.27
+onnxruntime==1.30.0
+numpy==2.2.6
+scipy==1.17.1
+scikit-learn==1.9.1
+pandas==3.0.6
+lightgbm==4.7.0
+av==18.1.0
+opencv-python-headless==5.0.0.93
+mediapipe==1.0.1
+soundfile==0.14.0
+faster-whisper==1.2.1
+Pillow==12.3.0
+qrcode==8.2
+weasyprint==70.0
+huggingface-hub==1.33.0

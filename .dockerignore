@@ -1,0 +1,17 @@
+.venv/
+envs/
+node_modules/
+.next/
+data/
+var/
+logs/
+wandb/
+ml/runs/
+mlruns/
+*.npy
+*.npz
+*.parquet
+__pycache__/
+.git/
+public/samples/
+docs/screens/

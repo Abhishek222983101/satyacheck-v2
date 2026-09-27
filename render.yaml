@@ -1,0 +1,20 @@
+# Render blueprint: SatyaCheck v2 inference API (Docker, CPU ORT backend).
+# Applied via dashboard (Blueprints → New from repo) or `render blueprint launch`.
+# NOTE on plan: torch + the 469 MB SpliceLoc ORT session + MediaPipe need ~1.5 GB RSS,
+# so this runs on `standard` (2 GB). `starter` (1 GB) will OOM on the first analysis.
+services:
+  - type: web
+    name: satyacheck-api
+    runtime: docker
+    plan: standard
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /v1/health
+    envVars:
+      - key: SATYA_RUNTIME
+        value: ort
+      - key: SATYA_VAR
+        value: /data
+    disk:
+      name: satya-data
+      mountPath: /data
+      sizeGB: 2
