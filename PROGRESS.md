@@ -25,7 +25,7 @@ Blueprint: SATYACHECK_BLUEPRINT.md · Env: `. .venv/bin/activate` · Secrets: `s
 - ✅ P3.1 dataset (on-the-fly splice→AAC→crop; exact labels) · ✅ P3.2 model (117M total, 3.2M heads, XLS-R 8 layers, BAM-style heads)
 - 🟡 P3.3 training v2 running: ml/runs/spliceloc_v2, W&B group M2-SpliceLoc, 9 epochs x 3000 (log: logs/spliceloc_v2.log)
 - ⬜ P3.4 eval: `python -m ml.eval.eval_spliceloc --ckpt ml/runs/spliceloc_v2/best.pt` (script written, untested)
-  ## P7 Eval 🟡 (core done; baselines+plots+claims left)  ## P8 🟡 (P8.1 export, P8.2 ORT-swap left)  ## P9 ⬜  ## P10 ⬜
+  ## P7 ✅ (P7.1 ONNX end-to-end re-run folded into P8.2 parity smoke; per-model evals + heldout + baselines + ablations + plots + claims done)  ## P8 ✅ 5/5  ## P9 ⬜  ## P10 ⬜
 
 ## P4-P6 (M1 SyncFormer, M4 FaceTrace, M3 ForwardAge, M5 Nyaya) — status
 - ✅ P4.0 real-speaker data: TalkVid-Bench (500) + 1,199 clips fetched via yt-dlp from TalkVid's metadata (900 speakers, 332 Hindi); 1,126 cached (819 train / 104 val / 107 cal / 96 test clips, speaker-disjoint). Ladder Gen1-5 + ROI/mel/kin per clip in data/cache_v.
@@ -40,6 +40,8 @@ Blueprint: SATYACHECK_BLUEPRINT.md · Env: `. .venv/bin/activate` · Secrets: `s
 - Diagnosis of weak spots: per-branch AUC on its own family (test, vs real) M1 0.96/0.96/0.90 (shift/swap/partial), M2 splice 0.85, M4 blend 0.94 BUT FaceTrace's score on REAL faces climbs 0.40 (Gen0) -> 0.88 (Gen5) = codec artefacts read as blends. Multiple-testing across 3 noisy branches keeps real-clip abstention high. Levers: codec-faithful FaceTrace retrain, M2 domain adaptation to in-the-wild speech
 - Lesson: torch.load(weights_only=True) rejected the first Nyaya checkpoint (NumPy scalars) — checkpoints now store plain Python types
 - ✅ Held-out generator (P7 core): 88 Wav2Lip dubs of TEST clips, Gen0-5, end-to-end on files; ml/reports/heldout_wav2lip.json. Nyaya AUC on unseen generator 0.78 (full dubs) / 0.85 (partial); fake_called_REAL 0-3.1% across gens (safe failure); abstains ~70% (conservative); SyncNet zero-shot baseline 0.41-0.66. Result: generalisation to unseen generators demonstrated but abstention-heavy — claim guard wording: "flags Wav2Lip fakes with <3% false-accept; abstains rather than guesses"
+- ✅ P8.1 ONNX export (opset 18): SpliceLoc pad-with-shape FIXED (static layer_norm dim) + onnxsim before INT8 (pos_conv Mul fold). Parity fp32 <1e-2 (M1 5.8e-4 on 40 real clips). INT8 AUC gate (§4.12): M1 int8 kept (Δ0.19pt), M4 fp32 (int8 Δ46pt), M2 fp32 (int8 slower on CPU 1.42s vs 0.75s + drift). M2 exported from v4 (the served ckpt). Serving ≈143 MB. models/registry.json (sha16 per artifact, serving variants)
+- ✅ P8.2 ORT CPU backend satya_core/onnx_models.py — same Models interface, hash-checked vs registry, fixed-window pad/slice (M1 250fr, M2 160k samples); server SATYA_RUNTIME=ort; live smoke: wav2lip fake -> SUSPECT p=0.728, 5.1 s CPU end-to-end (preprocess-dominated)
 - ✅ P8.3 FastAPI+SSE+SQLite per §6.2/6.3 (server/), upload hardening (stream cap 100 MB, libmagic denylist + ffprobe gate), janitor, problem+json everywhere; mock pipeline mode (SATYA_MOCK=1) so server runs with no GPU/weights — swap point is one function (server/runner.py:Pipeline)
 - ✅ P8.4 /v1/chains (ForwardChain gens + per-gen verdict events), /v1/redteam/words (Whisper), /v1/redteam/splice (P1.5 factory muxed over video, truth boundaries)
 - ✅ P8.5 dossier PDF (WeasyPrint) + 1080x1350 share card en/hi (Pillow+qrcode), stored as artifacts
