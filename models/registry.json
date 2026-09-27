@@ -52,7 +52,7 @@
       "trained_on": "self-blended pseudo-fakes on real faces, channel-shared"
     },
     "spliceloc": {
-      "version": "v2",
+      "version": "v4-epoch4",
       "onnx_path": "models/spliceloc.onnx",
       "sha256": "a71c2af945fdce65",
       "int8_path": "models/spliceloc.int8.onnx",
@@ -71,7 +71,7 @@
         "frame (B,T,2)",
         "utt (B,2)"
       ],
-      "trained_on": "splice factory on-the-fly, IndicTTS/FLEURS audio"
+      "trained_on": "splice factory on-the-fly, IndicTTS/FLEURS audio (v4: boundary_f1 0.665, splice AUC gen-stable 0.886-0.927)"
     },
     "nyaya": {
       "version": "nyaya-fit",
@@ -111,8 +111,9 @@
   "serving": {
     "syncformer": "int8",
     "facetrace": "fp32",
-    "spliceloc": "int8",
+    "spliceloc": "fp32",
     "nyaya": "fp32"
   },
-  "int8_gate_ref": "ml/reports/int8_gate.json"
+  "int8_gate_ref": "ml/reports/int8_gate.json",
+  "spliceloc_int8_note": "int8 slower than fp32 on CPU (1.42s vs 0.75s/10s) + logit drift; fp32 served"
 }
