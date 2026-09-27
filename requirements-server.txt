@@ -25,3 +25,4 @@ Pillow==12.3.0
 qrcode==8.2
 weasyprint==70.0
 huggingface-hub==1.33.0
+python-multipart==0.0.20
