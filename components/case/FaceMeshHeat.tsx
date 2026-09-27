@@ -21,7 +21,7 @@ export default function FaceMeshHeat({ src, frames = [] }: Props) {
       <Canvas camera={{ position: [0, 0, 2.2], fov: 40 }} dpr={[1, 2]}>
         <ambientLight intensity={1.1} />
         <Mesh src={src} frames={frames} setReady={setReady} />
-        <OrbitControls enablePan={false} autoRotate autoRotateSpeed={0.8} minDistance={1.4} maxDistance={3.5} />
+        <OrbitControls enablePan={false} autoRotate autoRotateSpeed={0.5} minDistance={1.4} maxDistance={3.5} />
       </Canvas>
       {!ready ? (
         <span className="absolute bottom-2 left-3 t-small">
@@ -92,7 +92,7 @@ function Mesh({ src, frames = [], setReady }: Props & { setReady: (b: boolean) =
 
   return (
     <points ref={pointsRef} geometry={geo}>
-      <pointsMaterial size={0.028} vertexColors sizeAttenuation />
+      <pointsMaterial size={0.05} vertexColors sizeAttenuation transparent opacity={0.95} />
     </points>
   );
 }

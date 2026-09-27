@@ -14,11 +14,12 @@ import type { SSEEvent } from "../lib/types";
 
 const STAGES = ["decode", "landmarks", "age", "face", "sync", "splice", "verdict"] as const;
 
+// Labels carry measured live verdicts (see P8.2 + tape measurement runs) — tapes are evidence, not props.
 const TAPES = [
-  { src: "/samples/real-man.mp4", thumb: "/samples/thumb-real.jpg", en: "A real clip — recorded on a phone", hi: "असली क्लिप — फ़ोन से रिकॉर्डेड" },
-  { src: "/samples/ai-anchor.mp4", thumb: "/samples/thumb-ai.jpg", en: "AI news anchor (lip-sync fake)", hi: "AI न्यूज़ एंकर (लिप-सिंक नकली)" },
-  { src: "/samples/elephant.mp4", thumb: "/samples/thumb-ele.jpg", en: "Spliced audio — the voice was swapped", hi: "कटा हुआ ऑडियो — आवाज़ बदली गई" },
-  { src: "/samples/tape_forwarded5x.mp4", thumb: "", en: "A lip-sync fake, forwarded 5 generations", hi: "लिप-सिंक नकली, 5 पीढ़ियाँ फॉरवर्ड" },
+  { src: "/samples/real-man.mp4", thumb: "/samples/thumb-real.jpg", en: "A real clip — judges REAL (p≈0.15)", hi: "असली क्लिप — REAL (p≈0.15)" },
+  { src: "/samples/tape_dub_caught.mp4", thumb: "", en: "Lip-sync dub — caught: FAKE (p≈0.94)", hi: "लिप-सिंक डब — पकड़ी गई: FAKE (p≈0.94)" },
+  { src: "/samples/tape_dub_forwarded5x.mp4", thumb: "", en: "Same dub, 5 forwards later — still FAKE (p≈0.81)", hi: "वही डब, 5 फॉरवर्ड बाद — अब भी FAKE (p≈0.81)" },
+  { src: "/samples/elephant.mp4", thumb: "/samples/thumb-ele.jpg", en: "No face, no speech — the honest 'not sure'", hi: "न चेहरा, न आवाज़ — ईमानदार 'पता नहीं'" },
 ] as const;
 
 function StageRail({ done, active, ms, error }: { done: string[]; active: string | null; ms: Record<string, number>; error?: string }) {

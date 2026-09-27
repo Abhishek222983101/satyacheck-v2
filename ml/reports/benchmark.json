@@ -1,6 +1,6 @@
 {
   "generated_by": "python -m ml.eval.benchmark",
-  "git_sha": "54fe0539eb8c",
+  "git_sha": "778eca24eb83",
   "models": {
     "syncformer": "c3b9f94eb125245f",
     "spliceloc": "2c648f87e62e37e2",
@@ -332,16 +332,5 @@
       "auc_lips": 0.77915518314367,
       "auc_mean": 0.8332151714320666
     }
-  },
-  "latency_cpu": {
-    "n": 50,
-    "p50_ms": 4849,
-    "p95_ms": 5480,
-    "mean_ms": 4877,
-    "preprocess_p50_ms": 1945,
-    "gpu": "hidden",
-    "threads": 4,
-    "note": "10 s window cap; wav2lip attack clips as load"
-  },
-  "latency_gate_pass": true
+  }
 }

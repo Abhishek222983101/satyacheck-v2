@@ -16,6 +16,17 @@ REPORTS = (Path(__file__).resolve().parents[2] / "ml" / "reports")
 ALLOWED_REPORTS = {"heldout_wav2lip", "nyaya", "spliceloc", "forwardage", "ablations", "benchmark"}
 
 
+def _clean(o):
+    import math
+    if isinstance(o, float):
+        return o if math.isfinite(o) else None
+    if isinstance(o, dict):
+        return {k: _clean(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_clean(v) for v in o]
+    return o
+
+
 @router.get("/health")
 async def health():
     warm = runner.PIPE.warm()
@@ -30,7 +41,7 @@ async def benchmarks(name: str):
     p = REPORTS / f"{name}.json"
     if not p.exists():
         return problem(404, "Not found", "That report hasn't been generated yet.")
-    return JSONResponse(json.loads(p.read_text()))
+    return JSONResponse(_clean(json.loads(p.read_text())))
 
 
 @router.get("/benchmarks")
@@ -39,5 +50,5 @@ async def all_benchmarks():
     for name in sorted(ALLOWED_REPORTS):
         p = REPORTS / f"{name}.json"
         if p.exists():
-            out[name] = json.loads(p.read_text())
+            out[name] = _clean(json.loads(p.read_text()))
     return out

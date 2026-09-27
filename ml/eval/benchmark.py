@@ -23,6 +23,18 @@ def _ckpt_sha(path: str) -> str | None:
     return hashlib.sha256(p.read_bytes()).hexdigest()[:16] if p.exists() else None
 
 
+def _clean(o):
+    """Reports were written with NaN literals (sklearn on tiny subsets); the wire forbids them."""
+    import math
+    if isinstance(o, float):
+        return o if math.isfinite(o) else None
+    if isinstance(o, dict):
+        return {k: _clean(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [_clean(v) for v in o]
+    return o
+
+
 def build() -> dict:
     ny, sp, fa = _load("nyaya"), _load("spliceloc"), _load("forwardage")
     ho, ab = _load("heldout_wav2lip"), _load("ablations")
@@ -48,7 +60,7 @@ def build() -> dict:
         "unseen_generator": {"wav2lip": ho} if ho else None,
         "baselines": {"pixel_only_gen0": pixel} if pixel else None,
     }
-    (R / "benchmark.json").write_text(json.dumps(bench, indent=2, default=str))
+    (R / "benchmark.json").write_text(json.dumps(_clean(bench), indent=2, default=str))
     print("wrote", R / "benchmark.json", "git", git)
     return bench
 

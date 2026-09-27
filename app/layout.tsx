@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { LangProvider } from "../lib/i18n";
 import Nav from "../components/Nav";
+import ConsoleQuiet from "../components/ConsoleQuiet";
 
 // Anek (Ek Type) variable fonts, bundled locally so the wdth axis works offline too.
 const anekLatin = localFont({
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${anekLatin.variable} ${anekDeva.variable}`}>
       <body>
         <LangProvider>
+          <ConsoleQuiet />
           <Nav />
           <main className="mx-auto w-full max-w-[1200px] px-5 pb-16">{children}</main>
           <footer className="mx-auto max-w-[1200px] px-5 pb-8 t-small">

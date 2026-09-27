@@ -68,8 +68,15 @@ async def splice(req: SpliceReq):
 
     from ml.redteam.splice import splice_spans
     wav, sr = _load_wav(src)
+    dur = len(wav) / sr
+    t0, t1 = max(0.0, req.t0), min(dur, req.t1)
+    if t1 - t0 < 0.15:
+        raise HTTPException(422, "That slice is too short or past the end of the clip — pick words inside the audio.")
     loop = asyncio.get_running_loop()
-    res = await loop.run_in_executor(None, lambda: splice_spans(wav, sr, req.op, (req.t0, req.t1)))
+    try:
+        res = await loop.run_in_executor(None, lambda: splice_spans(wav, sr, req.op, (t0, t1)))
+    except ValueError as e:
+        raise HTTPException(422, f"Couldn't forge that edit ({e}) — try a shorter slice inside the clip.")
 
     out_dir = OUT / case_id
     out_dir.mkdir(parents=True, exist_ok=True)

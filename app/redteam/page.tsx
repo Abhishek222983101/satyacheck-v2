@@ -17,6 +17,7 @@ export default function RedTeamPage() {
   const router = useRouter();
   const [mediaId, setMediaId] = useState("");
   const [words, setWords] = useState<Word[] | null>(null);
+  const [wordSource, setWordSource] = useState<"whisper" | "pauses" | null>(null);
   const [picked, setPicked] = useState<number[]>([]);
   const [op, setOp] = useState<"delete" | "swap" | "duplicate">("delete");
   const [busy, setBusy] = useState(false);
@@ -34,10 +35,11 @@ export default function RedTeamPage() {
   const loadWords = async () => {
     setErr(null); setWords(null); setPicked([]);
     try {
-      const j = await api<{ words?: Word[] }>(`/v1/redteam/words/${mediaId.trim()}`);
+      const j = await api<{ words?: Word[]; source?: "whisper" | "pauses" }>(`/v1/redteam/words/${mediaId.trim()}`);
       const ws = (j.words ?? []).filter((w) => w.w.trim());
-      if (!ws.length) throw new Error("no words found — does this clip have speech?");
+      if (!ws.length) throw new Error("no speech found in this clip — try one where someone is clearly talking.");
       setWords(ws);
+      setWordSource(j.source ?? null);
     } catch (e) {
       setErr(e instanceof Error ? e.message : t("error_generic"));
     }
@@ -89,6 +91,11 @@ export default function RedTeamPage() {
 
       {words ? (
         <>
+          {wordSource === "pauses" ? (
+            <p className="t-small mt-3" style={{ color: "var(--seal-suspect)" }}>
+              no clear words came through — these are speech chunks between pauses. Forging still works; pick any.
+            </p>
+          ) : null}
           <div className="panel mt-4 flex flex-wrap gap-2 p-4">
             {words.map((w, i) => (
               <button
