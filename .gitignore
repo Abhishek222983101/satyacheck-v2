@@ -54,3 +54,4 @@ wandb/
 .venv/
 envs/
 __pycache__/
+data/user_recordings/
