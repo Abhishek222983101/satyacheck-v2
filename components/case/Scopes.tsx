@@ -103,6 +103,7 @@ export function SpliceScope({ src, r }: { src: string; r: AnalysisResult }) {
           </div>
           <p className="t-small mt-1">
             p(spliced) <b className="t-num">{b.p_spliced?.toFixed(3)}</b> · p(synthetic voice) <b className="t-num">{b.p_synthetic?.toFixed(3)}</b> · cuts detected <b className="t-num">{(b.boundaries ?? []).length}</b>
+            {(b.boundaries ?? []).length === 0 ? " — magenta pins would appear here at each detected cut" : ""}
           </p>
         </>
       )}

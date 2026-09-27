@@ -25,9 +25,10 @@
 }
 
 html {
+  --font-anek: var(--font-anek-latin), var(--font-anek-deva), system-ui, sans-serif;
   background: var(--bench);
   color: var(--panel-ink);
-  font-family: var(--font-anek), system-ui, sans-serif;
+  font-family: var(--font-anek);
   line-height: 1.5;
 }
 ::selection { background: var(--signal-sync); color: #fff; }

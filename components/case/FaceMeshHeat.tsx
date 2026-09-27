@@ -15,22 +15,28 @@ type Props = { src: string; frames?: number[] };
 const HEAT = (t: number) => new THREE.Color().setHSL(0.12 - 0.12 * t, 0.75, 0.45 + 0.15 * t); // yellow -> red
 
 export default function FaceMeshHeat({ src, frames = [] }: Props) {
+  const [ready, setReady] = useState(false);
   return (
-    <div className="panel overflow-hidden" style={{ height: 320 }}>
+    <div className="panel relative overflow-hidden" style={{ height: 320 }}>
       <Canvas camera={{ position: [0, 0, 2.2], fov: 40 }} dpr={[1, 2]}>
         <ambientLight intensity={1.1} />
-        <Mesh src={src} frames={frames} />
+        <Mesh src={src} frames={frames} setReady={setReady} />
         <OrbitControls enablePan={false} autoRotate autoRotateSpeed={0.8} minDistance={1.4} maxDistance={3.5} />
       </Canvas>
+      {!ready ? (
+        <span className="absolute bottom-2 left-3 t-small">
+          loading the 3D face… (needs WebGL + the landmark model — the strip above still carries the verdict)
+        </span>
+      ) : null}
     </div>
   );
 }
 
-function Mesh({ src, frames = [] }: Props) {
+function Mesh({ src, frames = [], setReady }: Props & { setReady: (b: boolean) => void }) {
   const pointsRef = useRef<THREE.Points>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lmRef = useRef<FaceLandmarker | null>(null);
-  const [ready, setReady] = useState(false);
+  const ready = true;
 
   const geo = useMemo(() => {
     const g = new THREE.BufferGeometry();
