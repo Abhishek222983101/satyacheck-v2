@@ -29,6 +29,10 @@ listed here must NOT appear on a slide, README, or answer to a judge.
 - Any "outperforms" against other papers' numbers — only against our own baselines (pixel-only, SyncNet zero-shot, mean-of-branches) on our test sets.
 - "<10 s p95 on a mid-range laptop" — needs P10.2 latency run with GPU hidden (CUDA_VISIBLE_DEVICES="", 4 threads).
 
+## Known domain gaps (disclosed)
+
+- **Hindi/room-mic webcam recordings**: sync branch extrapolates (0.6-0.75 on genuine clips), splice was similarly elevated until the mic-ingest normalisation (afftdn for in-app recordings only, measured: p_spliced 0.75 -> 0.35 on test webm). Full fix = M2 opus fine-tune + M1 webcam top-up, pending user recordings. Until then: mic recordings land SUSPECT, never FAKE (fusion + conformal hold).
+
 ## Open measurements required before deploy claims
 
 1. P7.1 `run_eval.py` end-to-end through ONNX (post P8.1) — regenerate benchmark from ONNX hashes.

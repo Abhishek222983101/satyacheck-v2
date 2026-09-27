@@ -39,7 +39,7 @@ def safe_artifact(name: str) -> str:
     return name
 
 
-async def save_upload(f: UploadFile, case_id: str) -> dict:
+async def save_upload(f: UploadFile, case_id: str, source: str = "upload") -> dict:
     """Stream to disk with a hard size cap; sniff content via libmagic (never trust
     the declared type); then ffprobe as the authoritative gate.
     Returns {path, sha256, duration_s, width, height, has_audio}."""
@@ -66,6 +66,27 @@ async def save_upload(f: UploadFile, case_id: str) -> dict:
     if probe.returncode != 0:
         dst.unlink(missing_ok=True)
         raise HTTPException(415, "This file has no readable stream. It may be corrupted — try re-exporting it.")
+    # Mic-ingest normalisation: browser recordings are Opus + DTX + AGC — artifacts that
+    # genuinely mimic splice seams to a splice model trained on AAC/YouTube audio. For
+    # KNOWN-FRESH sources (recorded in-app), re-encode once into clean H.264/AAC so the
+    # branches judge the user's voice, not the container codec. Ordinary uploads untouched.
+    if Path(dst).suffix.lower() in (".webm", ".opus") and source in ("webcam", "mic"):
+        clean = dst.with_suffix(".clean.mp4")
+        r = subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(dst),
+                            "-map", "0:v:0", "-map", "0:a:0", "-vf", "format=yuv420p",
+                            "-af", "afftdn=nr=10:nf=-20", "-c:v", "libx264", "-preset", "veryfast",
+                            "-crf", "23", "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart",
+                            str(clean)], capture_output=True)
+        if r.returncode == 0 and clean.exists() and clean.stat().st_size > 10_000:
+            dst = clean
+            sha = hashlib.sha256()  # hash the file we actually serve/analyse
+            with dst.open("rb") as rr:
+                for blk in iter(lambda: rr.read(1 << 20), b""):
+                    sha.update(blk)
+            clean_probe = subprocess.run(["ffprobe", "-v", "error", "-print_format", "json",
+                                          "-show_streams", str(dst)], capture_output=True, text=True)
+            probe = clean_probe  # authoritative info now comes from the clean file
+
     info = json.loads(probe.stdout or "{}")
     streams = info.get("streams", [])
     v = next((s for s in streams if s.get("codec_type") == "video"), None)

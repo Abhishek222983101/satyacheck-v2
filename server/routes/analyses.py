@@ -73,7 +73,7 @@ def _launch(analysis_id: str, media_path: str):
 @router.post("/analyses", status_code=202)
 async def create_analysis(file: UploadFile, background: BackgroundTasks, source: str = "upload", title: str | None = None):
     case = new_case(source if source in ("upload", "sample", "webcam", "redteam", "chain") else "upload", title)
-    info = await save_upload(file, case.id)
+    info = await save_upload(file, case.id, source)
     media_id = analysis_id = str(uuid.uuid4())
     case_id = case.id
     with Session(engine) as s:
