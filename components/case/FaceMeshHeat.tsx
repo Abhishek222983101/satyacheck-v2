@@ -49,6 +49,7 @@ function Mesh({ src, frames = [], setReady }: Props & { setReady: (b: boolean) =
   useEffect(() => {
     let alive = true;
     const v = document.createElement("video");
+    v.crossOrigin = "anonymous"; // else WebGL texImage2D throws on :8000-served clips (tainted canvas)
     v.src = src; v.muted = true; v.loop = true; v.playsInline = true;
     videoRef.current = v;
     (async () => {

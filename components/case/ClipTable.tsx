@@ -55,7 +55,7 @@ export default function ClipTable({ src, r, landed }: { src: string; r: Analysis
 
   return (
     <div className="relative panel overflow-hidden" style={{ background: "#0c0f10" }}>
-      <video ref={videoRef} src={src} controls className="w-full" playsInline />
+      <video ref={videoRef} src={src} controls className="w-full" playsInline crossOrigin="anonymous" />
       <canvas ref={canvasRef} className="pointer-events-none absolute left-0 top-0 h-full w-full" style={{ opacity: overlay === "on" ? 0.9 : 0 }} />
       <Seal label={r.verdict.label} hi={r.verdict.headline_hi.split("—")[0]} landed={landed} />
       {overlay === "loading" ? <span className="absolute bottom-2 left-2 t-small" style={{ color: "#cfd8d5" }}>loading landmark overlay…</span> : null}
