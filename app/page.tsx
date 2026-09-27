@@ -225,7 +225,7 @@ function RecordButton({ onFile, label }: { onFile: (f: File) => void; label: str
         </p>
       ) : null}
       {rec ? (
-        <div className="panel mt-3 max-w-[560px] overflow-hidden">
+        <div className="panel mx-auto mt-3 max-w-[560px] overflow-hidden">
           <div className="flex items-center gap-2 border-b-[3px] border-[color:var(--ink)] px-3 py-2">
             <span className="inline-block h-3 w-3 animate-pulse rounded-full" style={{ background: "var(--seal-fake)" }} />
             <b className="font-display text-[22px] tabular-nums">0:0{left}</b>
