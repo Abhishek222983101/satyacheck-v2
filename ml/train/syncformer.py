@@ -122,6 +122,19 @@ class CrossLayer(nn.Module):
         return self.fv(v2), self.fa(a2)
 
 
+def cost_volume(pa, pv, maxs=15):
+    """vol[b,t,k] = cos(audio_t, video_{t-s}) for s = k - maxs. Label convention: shift s>0 = audio delayed by s frames, i.e.
+    the audio at frame t is original frame t-s, which pairs with video frame t-s. So argmax_k vol == s + maxs == the class index.
+    pa, pv: L2-normalised (B,T,C). Out-of-range video frames contribute 0."""
+    B, T, C = pv.shape
+    pvp = F.pad(pv, (0, 0, maxs, maxs))                                   # (B, T+2*maxs, C)
+    out = []
+    for k in range(2 * maxs + 1):
+        sh = k - maxs
+        out.append((pa * pvp[:, maxs - sh: maxs - sh + T]).sum(-1))
+    return torch.stack(out, -1)                                            # (B,T,31)
+
+
 class SyncFormer(nn.Module):
     def __init__(self, d=192, heads=4, layers=3, kd_dim=1024, emb=128):
         super().__init__()
@@ -130,7 +143,7 @@ class SyncFormer(nn.Module):
         self.kin = nn.Sequential(nn.Linear(8, 64), nn.GELU(), nn.Linear(64, d))
         self.cross = nn.ModuleList([CrossLayer(d, heads) for _ in range(layers)])
         self.fuse = nn.Sequential(nn.Linear(2 * d, d), nn.GELU())
-        self.delta = nn.Sequential(nn.Conv1d(d, d, 5, padding=2), nn.GELU())
+        self.delta = nn.Sequential(nn.Conv1d(d + 62, d, 5, padding=2), nn.GELU())      # fused features + 2 cost volumes (31 offsets each)
         self.delta_out = nn.Linear(d, NCLS)
         self.fake_out = nn.Linear(d, 1)
         self.pv, self.pa = nn.Linear(d, emb), nn.Linear(d, emb)          # contrastive projections (pre-fusion)
@@ -147,10 +160,13 @@ class SyncFormer(nn.Module):
         for layer in self.cross:
             v, a = layer(v, a)
         f = self.fuse(torch.cat([v, a], -1))
-        f = self.delta(f.transpose(1, 2)).transpose(1, 2)
+        pvn, pan = F.normalize(self.pv(ve), dim=-1), F.normalize(self.pa(ae), dim=-1)
+        kdv, kda = self.kdv(ve), self.kda(ae)
+        vol_c, vol_k = cost_volume(pan, pvn), cost_volume(F.normalize(kda, dim=-1), F.normalize(kdv, dim=-1))
+        vol = torch.cat([vol_c, vol_k], -1) * 5.0                                                                              # (B,T,62)
+        f = self.delta(torch.cat([f, vol.to(f.dtype)], -1).transpose(1, 2)).transpose(1, 2)
         return {"delta": self.delta_out(f), "fake": self.fake_out(f).squeeze(-1), "ve": ve, "ae": ae,
-                "pv": F.normalize(self.pv(ve), dim=-1), "pa": F.normalize(self.pa(ae), dim=-1),
-                "kdv": self.kdv(ve), "kda": self.kda(ae)}
+                "pv": pvn, "pa": pan, "kdv": kdv, "kda": kda, "vol_c": vol_c, "vol_k": vol_k}
 
 
 # ----------------------------------------------------------------------------- losses
@@ -170,14 +186,32 @@ def cos_kd(pred, tgt, m):
     return (c * m).sum() / m.sum().clamp(min=1)
 
 
-def compute_loss(o, b, w_nce=0.5, w_kd=1.0):
+def vol_loss(vol, lbl, scale=20.0):
+    """Direct offset supervision on a cost volume (B,T,31): treat scaled cosine similarities as logits over shifts.
+    Frames whose true partner video frame (t - s) falls outside the crop carry no evidence and are skipped;
+    NOSYNC frames are pushed toward a flat profile (no offset is consistent with unrelated speech)."""
+    B, T, K = vol.shape
+    t = torch.arange(T, device=vol.device)[None].expand(B, T)
+    ok_shift = (lbl != NOSYNC)
+    s = lbl - ZERO
+    inb = ((t - s) >= 0) & ((t - s) < T)
+    m = ok_shift & inb
+    logits = (vol.float() * scale)
+    ce = F.cross_entropy(logits[m], lbl[m]) if m.any() else vol.sum() * 0
+    ns = (lbl == NOSYNC)
+    flat = -F.log_softmax(logits[ns], -1).mean() if ns.any() else vol.sum() * 0          # cross-entropy to uniform
+    return ce + 0.3 * (flat - math.log(K)).clamp(min=0)
+
+
+def compute_loss(o, b, w_nce=0.5, w_kd=1.0, w_vol=1.0):
     T = o["delta"].shape[1]
     lbl = b["label"][:, :T]
     ce = F.cross_entropy(o["delta"].float().transpose(1, 2), lbl, label_smoothing=0.05)
     aligned = (b["kind"] == 0)
     l_nce = nce_loss(o["pv"][aligned].float(), o["pa"][aligned].float(), o["logit_scale"].exp().clamp(max=100)) if aligned.any() else ce * 0
     l_kd = 0.5 * (cos_kd(o["kdv"], b["kd_v"][:, :T], b["mv"][:, :T]) + cos_kd(o["kda"], b["kd_a"][:, :T], b["ma"][:, :T]))
-    return ce + w_nce * l_nce + w_kd * l_kd, {"shift_ce": ce.item(), "nce": float(l_nce), "kd": float(l_kd)}
+    l_vol = vol_loss(o["vol_c"], lbl) + vol_loss(o["vol_k"], lbl)
+    return ce + w_nce * l_nce + w_kd * l_kd + w_vol * l_vol, {"shift_ce": ce.item(), "nce": float(l_nce), "kd": float(l_kd), "vol": float(l_vol)}
 
 
 # ----------------------------------------------------------------------------- EMA
@@ -253,7 +287,7 @@ def main():
     ap.add_argument("--epochs", type=int, default=40); ap.add_argument("--epoch-len", type=int, default=1500)
     ap.add_argument("--bs", type=int, default=24); ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--lr", type=float, default=5e-4); ap.add_argument("--ema", type=float, default=0.995)
-    ap.add_argument("--w-kd", type=float, default=1.0); ap.add_argument("--w-nce", type=float, default=0.5)
+    ap.add_argument("--w-kd", type=float, default=1.0); ap.add_argument("--w-vol", type=float, default=1.0); ap.add_argument("--w-nce", type=float, default=0.5)
     ap.add_argument("--eval-n", type=int, default=120); ap.add_argument("--smoke", action="store_true"); ap.add_argument("--no-wandb", action="store_true")
     ap.add_argument("--out", default="ml/runs/syncformer")
     a = ap.parse_args(); dev = "cuda"; torch.manual_seed(0); np.random.seed(0)
@@ -279,7 +313,7 @@ def main():
             bt = {k: v.to(dev, non_blocking=True) for k, v in b.items()}
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 o = model(bt["roi"], bt["mel"], bt["kin"]); o["logit_scale"] = model.logit_scale
-                loss, parts = compute_loss(o, bt, a.w_nce, a.w_kd)
+                loss, parts = compute_loss(o, bt, a.w_nce, a.w_kd, a.w_vol)
             opt.zero_grad(set_to_none=True); loss.backward()
             gn = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step(); sched.step(); step += 1
             if ema: ema.update(model)

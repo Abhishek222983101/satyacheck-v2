@@ -198,3 +198,28 @@ def random_splice(x: np.ndarray, sr: int, rng: np.random.Generator, op: str | No
                     return splice_spans(x, sr, "insert", (span[0], span[0] + 0.01), xf_ms=xf, other=seg)
                 return splice_spans(x, sr, op, span, xf_ms=xf)
     return None
+
+
+def replace_span(x: np.ndarray, sr: int, span: tuple[float, float], other: np.ndarray | None = None, src_start: float | None = None,
+                 xf_ms: float = 8.0) -> SpliceResult:
+    """Length-PRESERVING substitution: x[a0:a1] := material of the same length taken from `other` (another take / TTS clip)
+    or from elsewhere in x (`src_start`). Two joins, exact labels, and the audio still lines up with the video — so a
+    fusion model cannot cheat on a length mismatch (real attackers keep the clip length too)."""
+    n = len(x)
+    a0 = _snap_zero(x, int(span[0] * sr), sr); a1 = _snap_zero(x, int(span[1] * sr), sr)
+    if not 0 < a0 < a1 < n:
+        raise ValueError("span outside clip")
+    L = a1 - a0
+    if other is not None:
+        seg = other[:L] if len(other) >= L else np.pad(other, (0, L - len(other)))
+    else:
+        s0 = int((src_start if src_start is not None else 0.0) * sr)
+        s0 = min(max(0, s0), max(0, n - L)); seg = x[s0: s0 + L]
+    seg = _match_level(seg, np.concatenate([x[max(0, a0 - sr // 2): a0], x[a1: a1 + sr // 2]]))
+    out, b, sp = assemble([(x[:a0], False), (seg, True), (x[a1:], False)], sr, xf_ms)
+    r = _finish(out, sr, "replace", b, sp)
+    if abs(len(r.audio) - n) > sr * xf_ms / 1000 * 2 + 2:            # crossfades may shave a few samples: restore exact length
+        r.audio = r.audio[:n] if len(r.audio) > n else np.pad(r.audio, (0, n - len(r.audio)))
+    if len(r.audio) != n:
+        r.audio = r.audio[:n] if len(r.audio) > n else np.pad(r.audio, (0, n - len(r.audio)))
+    return r

@@ -65,3 +65,15 @@ def test_valleys_are_in_pauses():
     assert len(v) > 5
     e = np.sqrt(np.convolve(x ** 2, np.ones(160) / 160, mode="same"))
     assert np.median([e[int(t * SR)] for t in v]) < np.median(e[e > 0]) * 0.5
+
+
+def test_replace_span_preserves_length_and_labels():
+    from ml.redteam.splice import replace_span
+    x = speechlike(8); other = speechlike(9)
+    r = replace_span(x, SR, (2.0, 2.5), other=other)
+    assert len(r.audio) == len(x)                                   # exact same length: audio still lines up with video
+    assert len(r.boundaries) == 2 and 0.4 < r.boundaries[1] - r.boundaries[0] < 0.6
+    assert len(r.spoof_spans) == 1 and r.frame_spoof[int(2.25 / FRAME_S)] == 1
+    r2 = replace_span(x, SR, (1.0, 1.4), src_start=5.0)             # from elsewhere in the same clip
+    assert len(r2.audio) == len(x) and not np.array_equal(r2.audio, x)
+    with pytest.raises(ValueError): replace_span(x, SR, (9.0, 9.9), other=other)
