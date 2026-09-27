@@ -139,6 +139,10 @@ export default function Desk() {
       ) : null}
       {err && !busy ? <p className="t-small mt-2" style={{ color: "var(--seal-fake)" }}>{err}</p> : null}
 
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <RecordButton onFile={(f) => runFlow(f, "webcam")} label={t("record")} />
+      </div>
+
       <h2 className="t-h3 mt-10" style={{ fontWeight: 650 }}>{t("samples")}</h2>
       <div className="mt-3 grid grid-cols-2 gap-4 md:grid-cols-4">
         {TAPES.map((tape) => (
@@ -157,6 +161,87 @@ export default function Desk() {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function RecordButton({ onFile, label }: { onFile: (f: File) => void; label: string }) {
+  const [rec, setRec] = useState(false);
+  const [left, setLeft] = useState(0);
+  const [denied, setDenied] = useState(false);
+  const ref = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const ivRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const start = async () => {
+    setDenied(false);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+      streamRef.current = stream;
+      const chunks: BlobPart[] = [];
+      const mr = new MediaRecorder(stream);
+      ref.current = mr;
+      mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      mr.onstop = () => {
+        stream.getTracks().forEach((tr) => tr.stop());
+        streamRef.current = null;
+        if (chunks.length) onFile(new File(chunks, "my-clip.webm", { type: "video/webm" }));
+      };
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+      }
+      mr.start(500); setRec(true); setLeft(8);
+      ivRef.current = setInterval(() => setLeft((l) => {
+        if (l <= 1) {
+          if (ivRef.current) clearInterval(ivRef.current);
+          try { if (mr.state !== "inactive") mr.stop(); } catch { /* ended */ }
+          setRec(false); return 0;
+        }
+        return l - 1;
+      }), 1000);
+    } catch {
+      setDenied(true);
+    }
+  };
+
+  useEffect(() => () => {
+    if (ivRef.current) clearInterval(ivRef.current);
+    streamRef.current?.getTracks().forEach((tr) => tr.stop());
+  }, []);
+
+  return (
+    <div className="w-full">
+      <button className="btn" onClick={start} disabled={rec}>
+        {rec ? `● recording — ${left}s (speak normally!)` : `◐ ${label}`}
+      </button>
+      {denied ? (
+        <p className="t-small mt-2" style={{ color: "var(--seal-fake)" }}>
+          Camera/microphone blocked — allow access in the address-bar icon, then try again. Or just drop a file above.
+        </p>
+      ) : null}
+      {rec ? (
+        <div className="panel mt-3 max-w-[560px] overflow-hidden">
+          <div className="flex items-center gap-2 border-b-[3px] border-[color:var(--ink)] px-3 py-2">
+            <span className="inline-block h-3 w-3 animate-pulse rounded-full" style={{ background: "var(--seal-fake)" }} />
+            <b className="font-display text-[22px] tabular-nums">0:0{left}</b>
+            <span className="t-small">look at the camera and speak continuously</span>
+            <button
+              className="btn ml-auto"
+              style={{ padding: "4px 12px" }}
+              onClick={() => {
+                if (ivRef.current) clearInterval(ivRef.current);
+                try { if (ref.current && ref.current.state !== "inactive") ref.current.stop(); } catch { /* ended */ }
+                setRec(false);
+              }}
+            >
+              ■ Stop & analyse
+            </button>
+          </div>
+          <video ref={videoRef} muted playsInline className="aspect-video w-full bg-black" style={{ transform: "scaleX(-1)" }} />
+        </div>
+      ) : null}
     </div>
   );
 }
