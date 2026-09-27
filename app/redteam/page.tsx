@@ -25,9 +25,9 @@ export default function RedTeamPage() {
   const [scanning, setScanning] = useState(false);
 
   useEffect(() => {
-    // prefill from the most recent Desk analysis, if any
-    const last = localStorage.getItem("satya:lastMediaId");
-    if (last) setMediaId(last);
+    // prefill from the most recent Desk analysis, if any (deferred: no sync setState in effect)
+    const id = setTimeout(() => setMediaId(localStorage.getItem("satya:lastMediaId") ?? ""), 0);
+    return () => clearTimeout(id);
   }, []);
 
   const loadWords = async () => {

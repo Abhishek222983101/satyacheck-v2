@@ -42,10 +42,10 @@ export default function LabPage() {
     <div className="pt-6">
       <h1 className="t-hero">The instrument wall.</h1>
       <p className="t-body mt-2 max-w-[70ch]">
-        Every figure on this page is served from the evaluation harness — the same JSON the server's
-        verdicts come from. Nothing is typed in by hand; if a check hasn't run, the cell stays empty.
+        Every figure on this page is served from the evaluation harness — the same JSON the server&rsquo;s
+        verdicts come from. Nothing is typed in by hand; if a check has not run, the cell stays empty.
       </p>
-      {err ? <p className="t-small mt-3" style={{ color: "var(--seal-fake)" }}>The report service isn't reachable — start the API server to see measured numbers.</p> : null}
+      {err ? <p className="t-small mt-3" style={{ color: "var(--seal-fake)" }}>The report service isn&rsquo;t reachable — start the API server to see measured numbers.</p> : null}
 
       {bench ? (
         <div className="mt-6 grid gap-4 md:grid-cols-2">
