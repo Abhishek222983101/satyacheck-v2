@@ -151,3 +151,14 @@ async def card(aid: str, lang: str = "en"):
     from server.dossier import render_card
     check_id(aid)
     return render_card(aid, lang)
+
+
+@router.get("/analyses/{aid}/media")
+async def media(aid: str):
+    """The analysed clip itself (video element on the case board)."""
+    check_id(aid)
+    with Session(engine) as s:
+        m = s.get(Media, aid)
+    if not m:
+        raise HTTPException(404, "no such media")
+    return FileResponse(m.path, media_type="video/mp4")

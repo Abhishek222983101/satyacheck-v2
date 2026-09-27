@@ -182,6 +182,10 @@ def run_analysis_sync(analysis_id: str, media_path: str, on_event=None) -> dict:
     impl = PIPE._load()
     if impl is None:  # mock
         from types import SimpleNamespace
+        for name, prog in (("decode", 0.18), ("landmarks", 0.36), ("age", 0.54), ("face", 0.68), ("sync", 0.82), ("splice", 0.92)):
+            time.sleep(0.25)
+            if on_event:
+                on_event("stage", {"stage": name, "t_ms": int((time.time() - t0) * 1000), "progress": prog})
         time.sleep(0.3)  # let the UI rail move; mock stays honest about being a mock
         meta = {"duration_s": 8.0, "assessed_s": 8.0, "has_audio": True, "width": 640, "height": 360,
                 "face_presence": 0.9, "speech_ratio": 0.7, "speech": [0.5] * 50, "mouth_open": [0.3] * 50, "fps": 25.0}
