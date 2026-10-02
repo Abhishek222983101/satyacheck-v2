@@ -18,6 +18,25 @@
 
 ---
 
+## 🗄️ Backups & assets tracker (added Oct 2026)
+
+Everything that lives outside this repo — models, recordings, archives — is mirrored
+on Hugging Face under the same team accounts. **This table is the single place to find them.**
+
+| Asset | What it is | Link |
+|---|---|---|
+| 🤖 **Model weights** | `facetrace.onnx`, `spliceloc.onnx`, `syncformer.int8.onnx`, `nyaya.*`, forward-age thresholds + feature spec — byte-identical to local `models/` | [huggingface.co/Abhishek1445/satyacheck-v2](https://huggingface.co/Abhishek1445/satyacheck-v2) |
+| 🎙️ **Recordings & runtime data** | `data/user_recordings` (adaptation clips), `data/manifests`, `var/uploads` (everything uploaded through the web UI) — tar.gz, 272 MB | [huggingface.co/datasets/Abhishek1445/satyacheck-recordings](https://huggingface.co/datasets/Abhishek1445/satyacheck-recordings) |
+| 📈 **Benchmark artifacts** | committed in this repo — `ml/reports/benchmark.json`, `ml/reports/claims.md`, plots | [`ml/reports/`](ml/reports/) |
+| 🧠 **Raw teacher weights** (aasist, xlsr, whisper, wav2lip) | NOT mirrored — re-downloaded automatically from upstream repos into `~/.cache/satya/weights` on first server start (~4.6 GB) | auto |
+| 🌐 **Live demo (laptop tunnel)** | cloudflared tunnel → API on :8000, web on Vercel | see `REHEARSAL.md` |
+
+**Backup routine (Oct 2026 disk cleanup):** source lives here, models + recordings on HF.
+After every demo session: `git push` this repo; if you recorded new clips, re-run the
+recordings tar → `hf upload Abhishek1445/satyacheck-recordings`. HF token backup: `~/.config/hf-token-backup/`.
+
+---
+
 ## What it does
 
 - **Drop a clip on the Desk** (or record yourself, or pick an evidence tape). The server
