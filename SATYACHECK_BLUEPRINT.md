@@ -187,7 +187,7 @@ Each row must be demonstrable live. Each has an automated test in `tests/` and/o
 | Work | Finding | Our use |
 |---|---|---|
 | **"Data Diversity, Not Frequency Invariance"** (arXiv 2608.28685, Aug 2026) | Plain EfficientNet-B0 on multi-quality data beat a DCT/FFT-phase compression-invariant architecture by 3.66 AUC at CRF 40; **real CRF variants beat synthetic JPEG augmentation by 7.3 points** | **The core [DECISION] behind ForwardChain**: spend effort on realistic codec chains, not exotic frequency branches. |
-| **SNVSE** (ACM MM 2025) — `github.com/truebees-ai/social_emulator` | Emulate a platform by estimating CRF + resize from ≥30 uploaded/downloaded pairs per resolution; detectors fine-tuned on emulated ≈ on real shared videos | **Method for calibrating ForwardChain against real WhatsApp.** |
+| **SNVSE** (ACM MM 2025) — ` ` | Emulate a platform by estimating CRF + resize from ≥30 uploaded/downloaded pairs per resolution; detectors fine-tuned on emulated ≈ on real shared videos | **Method for calibrating ForwardChain against real WhatsApp.** |
 | **Robustness study** (Frontiers AI, 2026) | Avg accuracy 94.7% clean → 67.8% distorted; temporal+spatial models degrade least | The collapse we demo with the baseline column. |
 | **PLADA** (2025) | Block effects mimic forgery traces; must not be confused with them | Why ForwardAge feeds *into* fusion as context (the model must know how degraded the clip is). |
 | **WhatsApp forensics** (UC Denver theses 2020) | Android re-encodes HD+ uploads to H.264 with the long side capped (≈640 px then), CFR→VFR, AAC re-encode; file-structure signatures identify WhatsApp | Priors for ForwardChain; **we re-measure on 2026 builds** because apps change. |
